@@ -15,6 +15,7 @@ class _AccountScreenState extends State<AccountScreen> {
   String get _name => AppService.residentName;
   String get _email => AppService.currentUser?.email ?? '';
   String get _phone => AppService.residentContact;
+  String get _avatarUrl => AppService.avatarUrl;
 
   void _refresh() => setState(() {});
 
@@ -91,18 +92,19 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFDBEAF8),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.person_rounded,
-                                size: 40,
-                                color: Colors.black54,
-                              ),
+                            CircleAvatar(
+                              radius: 32,
+                              backgroundColor: const Color(0xFFDBEAF8),
+                              backgroundImage: _avatarUrl.isNotEmpty
+                                  ? NetworkImage(_avatarUrl)
+                                  : null,
+                              child: _avatarUrl.isEmpty
+                                  ? const Icon(
+                                      Icons.person_rounded,
+                                      size: 40,
+                                      color: Colors.black54,
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 16),
                             Expanded(

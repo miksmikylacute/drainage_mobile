@@ -167,27 +167,30 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   }
 
   Widget _buildMessage(String message, {bool showRefresh = false}) {
-    return Center(
-      child: Padding(
+    return RefreshIndicator(
+      onRefresh: _refreshReports,
+      color: const Color(0xFF38B6FF),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: Colors.black54, fontSize: 14),
-            ),
-            if (showRefresh) ...[
-              const SizedBox(height: 12),
-              TextButton.icon(
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.22),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(color: Colors.black54, fontSize: 14),
+          ),
+          if (showRefresh) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton.icon(
                 onPressed: _refreshReports,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Refresh'),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

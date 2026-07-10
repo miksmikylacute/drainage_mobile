@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_service.dart';
+import '../widgets/app_alert_dialog.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -44,12 +45,15 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } catch (error) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString()),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+        await showAppAlertDialog(
+          context: context,
+          title: 'Login Failed',
+          message: AppService.friendlyAuthError(
+            error,
+            fallback: 'We could not sign you in. Please try again.',
           ),
+          icon: Icons.error_outline_rounded,
+          color: const Color(0xFFEF4444),
         );
       } finally {
         if (mounted) {

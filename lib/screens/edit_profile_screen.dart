@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/app_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -15,6 +18,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
 
+  XFile? _selectedAvatar;
+  Uint8List? _selectedAvatarBytes;
   bool _saving = false;
   String? _errorMessage;
 
@@ -49,6 +54,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         name: _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
+        avatar: _selectedAvatar,
       );
 
       if (!mounted) return;
@@ -73,6 +79,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _pickAvatar() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 900,
+    );
+
+    if (image == null) return;
+    final bytes = await image.readAsBytes();
+    setState(() {
+      _selectedAvatar = image;
+      _selectedAvatarBytes = bytes;
+    });
   }
 
   @override
@@ -150,35 +171,47 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: Column(
                             children: [
                               // Avatar with camera badge
-                              Stack(
-                                alignment: Alignment.bottomRight,
-                                children: [
-                                  Container(
-                                    width: 90,
-                                    height: 90,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFDBEAF8),
-                                      shape: BoxShape.circle,
+                              GestureDetector(
+                                onTap: _saving ? null : _pickAvatar,
+                                child: Stack(
+                                  alignment: Alignment.bottomRight,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 45,
+                                      backgroundColor: const Color(0xFFDBEAF8),
+                                      backgroundImage:
+                                          _selectedAvatarBytes != null
+                                          ? MemoryImage(_selectedAvatarBytes!)
+                                          : (AppService.avatarUrl.isNotEmpty
+                                                ? NetworkImage(
+                                                        AppService.avatarUrl,
+                                                      )
+                                                      as ImageProvider
+                                                : null),
+                                      child:
+                                          _selectedAvatar == null &&
+                                              AppService.avatarUrl.isEmpty
+                                          ? const Icon(
+                                              Icons.person_rounded,
+                                              size: 56,
+                                              color: Colors.black54,
+                                            )
+                                          : null,
                                     ),
-                                    child: const Icon(
-                                      Icons.person_rounded,
-                                      size: 56,
-                                      color: Colors.black54,
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF38B6FF),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
                                     ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF38B6FF),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.camera_alt_rounded,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 20),
 
