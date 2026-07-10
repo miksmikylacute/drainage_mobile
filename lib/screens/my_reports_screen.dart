@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_header.dart';
 
 import '../models/drainage_report.dart';
 import '../services/supabase_service.dart';
@@ -31,46 +32,12 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF),
+      backgroundColor: const Color(0xFF2196F3), // matches home screen
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: Colors.black,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'My Reports',
-                    style: GoogleFonts.poppins(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppHeader(title: 'My Reports'),
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -84,12 +51,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        16.0,
-                        20.0,
-                        16.0,
-                        10.0,
-                      ),
+                      padding: const EdgeInsets.all(24.0),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
@@ -112,7 +74,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                               ConnectionState.waiting) {
                             return const Center(
                               child: CircularProgressIndicator(
-                                color: Color(0xFF38B6FF),
+                                color: Colors.black,
                               ),
                             );
                           }
@@ -142,7 +104,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
                           return RefreshIndicator(
                             onRefresh: _refreshReports,
-                            color: const Color(0xFF38B6FF),
+                            color: Colors.black,
                             child: ListView.builder(
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.all(20.0),
@@ -184,6 +146,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 onPressed: _refreshReports,
                 icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Refresh'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black,
+                ),
               ),
             ],
           ],
@@ -210,7 +175,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               vertical: 8.0,
             ),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF0066FF) : Colors.transparent,
+              color: isSelected ? const Color(0xFF2196F3) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -227,7 +192,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             height: 3,
             width: 40,
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF0066FF) : Colors.transparent,
+              color: isSelected ? const Color(0xFF2196F3) : Colors.transparent,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -335,11 +300,6 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 ),
               ],
             ),
-          ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.black54,
-            size: 28,
           ),
         ],
       ),

@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'app_header.dart';
 import '../services/supabase_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -74,32 +77,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF),
+      backgroundColor: const Color(0xFF2196F3),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
             // ── App Bar ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.black, size: 28),
-                  ),
-                  Text(
-                    'Edit Profile',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppHeader(title: 'Edit Profile'),
 
             // ── White Body ───────────────────────────────────────────
             Expanded(
@@ -158,7 +142,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFF38B6FF),
+                                      color: Color(0xFF2196F3),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Icon(
@@ -254,7 +238,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: ElevatedButton(
                             onPressed: _saving ? null : _saveChanges,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF38B6FF),
+                              backgroundColor: const Color(0xFF2196F3),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -289,7 +273,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF38B6FF),
+                              color: Colors.black,
                             ),
                           ),
                         ),
@@ -319,7 +303,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 13,
-            color: Colors.black54,
+            color: Colors.black,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -328,7 +312,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.black),
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -345,7 +329,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  const BorderSide(color: Color(0xFF38B6FF), width: 1.5),
+                  const BorderSide(color: Color(0xFF2196F3), width: 1.5),
             ),
           ),
         ),

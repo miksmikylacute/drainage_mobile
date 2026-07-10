@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'welcome_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'login_screen.dart';
+import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,15 +15,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToWelcome();
+    _navigateToNext();
   }
 
-  Future<void> _navigateToWelcome() async {
+  Future<void> _navigateToNext() async {
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
+    
+    // Check if user is already logged in
+    final session = Supabase.instance.client.auth.currentSession;
+    
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+      MaterialPageRoute(
+        builder: (context) => session == null
+            ? const LoginScreen()
+            : const HomeScreen(),
+      ),
     );
   }
 
@@ -32,37 +42,26 @@ class _SplashScreenState extends State<SplashScreen> {
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          color: Color(0xFF38B6FF),
+          color: Colors.white,
         ),
         child: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 3),
-              // Logo
+              // Logo (New logo contains the text "REPORT DRAINAGE" baked-in)
               Image.asset(
                 'assets/drainage.png',
-                height: 160,
+                height: 180,
                 fit: BoxFit.contain,
               ),
-              const SizedBox(height: 16),
-              // App Name
-              Text(
-                'REPORT DRAINAGE',
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1.5,
-                ),
-              ),
               const Spacer(flex: 3),
-              // Loading indicator
+              // Loading indicator (Blue color on white background)
               const SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: Color(0xFF2196F3),
                   strokeWidth: 2.5,
                 ),
               ),
@@ -71,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 'Loading...',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: Colors.white70,
+                  color: Colors.grey[600],
                 ),
               ),
               const SizedBox(height: 48),

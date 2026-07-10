@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'app_header.dart';
 import '../models/drainage_report.dart';
 import '../services/supabase_service.dart';
 import 'my_reports_screen.dart';
@@ -461,7 +462,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       Navigator.pop(context); // Close dialog
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF38B6FF),
+                      backgroundColor: const Color(0xFF2196F3),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -487,7 +488,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   child: Text(
                     'Go to Dashboard',
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF0066FF),
+                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -542,48 +543,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF), // Blue top background
+      backgroundColor: const Color(0xFF2196F3), // matches home screen
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // Top Header
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
-              child: Row(
-                children: [
-                  // Back Button (Black circle with white arrow)
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: Colors.black,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Report a Drainage Issue',
-                    style: GoogleFonts.poppins(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Shared home-style header
+            const AppHeader(title: 'Report a Drainage Issue'),
 
             // White Content Body
             Expanded(
@@ -881,7 +847,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         child: ElevatedButton(
                           onPressed: _isSubmitting ? null : _handleSubmit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF38B6FF),
+                            backgroundColor: const Color(0xFF2196F3),
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shadowColor: Colors.transparent,

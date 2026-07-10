@@ -16,7 +16,7 @@ class HomeScreen extends StatelessWidget {
     final residentName = SupabaseService.residentName;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF), // Blue top background
+      backgroundColor: const Color(0xFF2196F3), // Blue top background
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -62,7 +62,7 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Hello, $residentName!',
                           style: GoogleFonts.poppins(
-                            color: Colors.black,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -71,7 +71,7 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Welcome to Drainage Reporting System',
                           style: GoogleFonts.poppins(
-                            color: Colors.black.withValues(alpha: 0.8),
+                            color: Colors.white.withOpacity(0.9),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -121,8 +121,7 @@ class HomeScreen extends StatelessWidget {
                         childAspectRatio: 1.15,
                         children: [
                           _buildActionCard(
-                            icon: Icons.find_in_page_rounded,
-                            iconColor: const Color(0xFF0066FF),
+                            imagePath: 'assets/icon_report_issue.png',
                             title: 'Report Issue',
                             onTap: () {
                               Navigator.push(
@@ -135,8 +134,7 @@ class HomeScreen extends StatelessWidget {
                             },
                           ),
                           _buildActionCard(
-                            icon: Icons.assignment_rounded,
-                            iconColor: const Color(0xFF10B981),
+                            imagePath: 'assets/icon_my_reports.png',
                             title: 'My Reports',
                             onTap: () {
                               Navigator.push(
@@ -148,8 +146,7 @@ class HomeScreen extends StatelessWidget {
                             },
                           ),
                           _buildActionCard(
-                            icon: Icons.notifications_rounded,
-                            iconColor: const Color(0xFFF59E0B),
+                            imagePath: 'assets/icon_notifications.png',
                             title: 'Notification',
                             onTap: () {
                               Navigator.push(
@@ -162,8 +159,7 @@ class HomeScreen extends StatelessWidget {
                             },
                           ),
                           _buildActionCard(
-                            icon: Icons.logout_rounded,
-                            iconColor: const Color(0xFFEF4444),
+                            imagePath: 'assets/icon_logout.png',
                             title: 'Logout',
                             onTap: () {
                               showDialog(
@@ -273,14 +269,14 @@ class HomeScreen extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0066FF),
+                                color: Colors.black,
                               ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-
+ 
                       // Recent Report List (Dynamic from Supabase, last 3 reports)
                       FutureBuilder<List<DrainageReport>>(
                         future: SupabaseService.fetchMyReports(),
@@ -290,7 +286,7 @@ class HomeScreen extends StatelessWidget {
                               child: Padding(
                                 padding: EdgeInsets.symmetric(vertical: 24.0),
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFF38B6FF),
+                                  color: Colors.black,
                                 ),
                               ),
                             );
@@ -322,14 +318,14 @@ class HomeScreen extends StatelessWidget {
                               ),
                             );
                           }
-
+ 
                           final recentReports = snapshot.data!.take(3).toList();
-
+ 
                           return Column(
                             children: recentReports.map((report) {
                               Color badgeBgColor;
                               Color badgeTextColor;
-
+ 
                               switch (report.status) {
                                 case 'Resolved':
                                   badgeBgColor = const Color(0xFFE2FBE9);
@@ -345,7 +341,7 @@ class HomeScreen extends StatelessWidget {
                                   badgeTextColor = const Color(0xFFE67E22);
                                   break;
                               }
-
+ 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12.0),
                                 padding: const EdgeInsets.all(12),
@@ -440,11 +436,6 @@ class HomeScreen extends StatelessWidget {
                                         ],
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.chevron_right_rounded,
-                                      color: Colors.black54,
-                                      size: 28,
-                                    ),
                                   ],
                                 ),
                               );
@@ -499,8 +490,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildActionCard({
-    required IconData icon,
-    required Color iconColor,
+    required String imagePath,
     required String title,
     required VoidCallback onTap,
   }) {
@@ -521,7 +511,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: iconColor),
+            Image.asset(imagePath, width: 48, height: 48),
             const SizedBox(height: 10),
             Text(
               title,
