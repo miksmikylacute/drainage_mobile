@@ -16,11 +16,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<int> _unreadNotificationCountFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _unreadNotificationCountFuture = AppService.fetchUnreadNotificationCount();
+  }
+
   Future<void> _refreshDashboard() async {
     await AppService.refreshCurrentUser();
     await AppService.fetchMyReports();
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      _unreadNotificationCountFuture =
+          AppService.fetchUnreadNotificationCount();
+    });
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
@@ -96,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final avatarUrl = AppService.avatarUrl;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF), // Blue top background
+      backgroundColor: const Color(0xFF2196F3), // Blue top background
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -145,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           'Hello, $residentName!',
                           style: GoogleFonts.poppins(
-                            color: Colors.black,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -154,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           'Welcome to Drainage Reporting System',
                           style: GoogleFonts.poppins(
-                            color: Colors.black.withValues(alpha: 0.8),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -179,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: RefreshIndicator(
                   onRefresh: _refreshDashboard,
-                  color: const Color(0xFF38B6FF),
+                  color: const Color(0xFF2196F3),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
@@ -209,8 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           childAspectRatio: 1.15,
                           children: [
                             _buildActionCard(
-                              icon: Icons.find_in_page_rounded,
-                              iconColor: const Color(0xFF0066FF),
+                              imagePath: 'assets/icon_report_issue.png',
                               title: 'Report Issue',
                               onTap: () {
                                 Navigator.push(
@@ -223,8 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                             _buildActionCard(
-                              icon: Icons.assignment_rounded,
-                              iconColor: const Color(0xFF10B981),
+                              imagePath: 'assets/icon_my_reports.png',
                               title: 'My Reports',
                               onTap: () {
                                 Navigator.push(
@@ -237,22 +246,26 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                             _buildActionCard(
-                              icon: Icons.notifications_rounded,
-                              iconColor: const Color(0xFFF59E0B),
+                              imagePath: 'assets/icon_notifications.png',
                               title: 'Notification',
-                              onTap: () {
-                                Navigator.push(
+                              badgeCountFuture: _unreadNotificationCountFuture,
+                              onTap: () async {
+                                await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         const NotificationsScreen(),
                                   ),
                                 );
+                                if (!context.mounted) return;
+                                setState(() {
+                                  _unreadNotificationCountFuture =
+                                      AppService.fetchUnreadNotificationCount();
+                                });
                               },
                             ),
                             _buildActionCard(
-                              icon: Icons.logout_rounded,
-                              iconColor: const Color(0xFFEF4444),
+                              imagePath: 'assets/icon_logout.png',
                               title: 'Logout',
                               onTap: () {
                                 _confirmLogout(context);
@@ -307,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(vertical: 24.0),
                                   child: CircularProgressIndicator(
-                                    color: Color(0xFF38B6FF),
+                                    color: Color(0xFF2196F3),
                                   ),
                                 ),
                               );
@@ -537,10 +550,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActionCard({
-    required IconData icon,
-    required Color iconColor,
+    required String imagePath,
     required String title,
     required VoidCallback onTap,
+    Future<int>? badgeCountFuture,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -556,17 +569,73 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Icon(icon, size: 40, color: iconColor),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.black,
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Image.asset(
+                        imagePath,
+                        width: 46,
+                        height: 46,
+                        fit: BoxFit.contain,
+                      ),
+                      if (badgeCountFuture != null)
+                        Positioned(
+                          top: -8,
+                          right: -10,
+                          child: FutureBuilder<int>(
+                            future: badgeCountFuture,
+                            builder: (context, snapshot) {
+                              final count = snapshot.data ?? 0;
+                              if (count <= 0) return const SizedBox.shrink();
+
+                              return Container(
+                                constraints: const BoxConstraints(
+                                  minWidth: 20,
+                                  minHeight: 20,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  count > 99 ? '99+' : '$count',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

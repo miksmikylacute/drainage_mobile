@@ -300,7 +300,7 @@ class _MapScreenState extends State<MapScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF38B6FF),
+                    backgroundColor: const Color(0xFF2196F3),
                     foregroundColor: Colors.white,
                     elevation: 4,
                     shadowColor: Colors.black26,

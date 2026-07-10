@@ -35,3 +35,8 @@ flutter:
   assets:
     - assets/clogged_drain.png
     - assets/drainage.png
+    - assets/drainage_clean.png
+    - assets/icon_report_issue.png
+    - assets/icon_my_reports.png
+    - assets/icon_notifications.png
+    - assets/icon_logout.png

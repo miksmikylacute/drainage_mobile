@@ -25,6 +25,7 @@ class AppUser {
 
 class AppNotification {
   final String id;
+  final String? reportId;
   final String title;
   final String message;
   final DateTime createdAt;
@@ -32,11 +33,25 @@ class AppNotification {
 
   const AppNotification({
     required this.id,
+    this.reportId,
     required this.title,
     required this.message,
     required this.createdAt,
     required this.isRead,
   });
+
+  factory AppNotification.fromSupabase(Map<String, dynamic> data) {
+    final createdAtValue = data['created_at'];
+
+    return AppNotification(
+      id: '${data['id']}',
+      reportId: data['report_id'] == null ? null : '${data['report_id']}',
+      title: '${data['title'] ?? 'Notification'}',
+      message: '${data['message'] ?? ''}',
+      createdAt: DateTime.tryParse('${createdAtValue ?? ''}') ?? DateTime.now(),
+      isRead: data['is_read'] == true,
+    );
+  }
 }
 
 class AppService {
@@ -385,10 +400,76 @@ class AppService {
   }
 
   static Future<List<AppNotification>> fetchNotifications() async {
-    return [];
+    final user = _currentUser;
+    if (user == null) return [];
+
+    final rows = await _client
+        .from('notifications')
+        .select('id,user_id,report_id,title,message,is_read,created_at')
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+
+    return (rows as List<dynamic>)
+        .map((row) => AppNotification.fromSupabase(row as Map<String, dynamic>))
+        .toList();
   }
 
   static Future<void> markNotificationAsRead(String id) async {
-    throw Exception('Backend integration is not connected yet.');
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    await _client.rpc(
+      'mark_notification_read',
+      params: {'p_notification_id': id},
+    );
+  }
+
+  static Future<void> markAllNotificationsAsRead() async {
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    await _client.rpc('mark_all_notifications_read');
+  }
+
+  static Future<int> fetchUnreadNotificationCount() async {
+    final user = _currentUser;
+    if (user == null) return 0;
+
+    final rows = await _client
+        .from('notifications')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+    return (rows as List<dynamic>).length;
+  }
+
+  static RealtimeChannel? subscribeToNotificationChanges(
+    void Function() onChange,
+  ) {
+    final user = _currentUser;
+    if (user == null) return null;
+
+    final channel = _client
+        .channel('resident-notifications-${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (_) => onChange(),
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  static Future<void> unsubscribeFromRealtime(RealtimeChannel? channel) async {
+    if (channel == null) return;
+    await _client.removeChannel(channel);
   }
 }

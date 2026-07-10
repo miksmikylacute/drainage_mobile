@@ -51,7 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             content: Text(
               'Account created successfully! Please login to continue.',
             ),
-            backgroundColor: Color(0xFF38B6FF),
+            backgroundColor: Color(0xFF2196F3),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -174,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -221,7 +221,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -268,7 +268,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -333,7 +333,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -397,7 +397,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -425,7 +425,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF38B6FF),
+                        backgroundColor: const Color(0xFF2196F3),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shadowColor: Colors.transparent,

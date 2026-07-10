@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 height: size.height * 0.42,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF38B6FF),
+                  color: Color(0xFF2196F3),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(36),
                     bottomRight: Radius.circular(36),
@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Welcome Back!',
                         style: theme.textTheme.headlineMedium?.copyWith(
-                          color: Colors.black,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
                         ),
@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Please login to continue',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: const Color(0xB3000000),
+                          color: const Color(0xB3FFFFFF),
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -166,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: Color(0xFF38B6FF),
+                                    color: Color(0xFF2196F3),
                                     width: 1.5,
                                   ),
                                 ),
@@ -225,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: Color(0xFF38B6FF),
+                                    color: Color(0xFF2196F3),
                                     width: 1.5,
                                   ),
                                 ),
@@ -250,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF38B6FF),
+                                backgroundColor: const Color(0xFF2196F3),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shadowColor: Colors.transparent,

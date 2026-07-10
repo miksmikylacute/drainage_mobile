@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_service.dart';
+import 'app_header.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 
@@ -22,35 +23,12 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF),
+      backgroundColor: const Color(0xFF2196F3),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // ── App Bar ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.black,
-                      size: 28,
-                    ),
-                  ),
-                  Text(
-                    'My Account',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppHeader(title: 'My Account'),
 
             // ── White Body ───────────────────────────────────────────
             Expanded(
@@ -256,7 +234,7 @@ class _AccountScreenState extends State<AccountScreen> {
             width: 44,
             height: 44,
             decoration: const BoxDecoration(
-              color: Color(0xFF38B6FF),
+              color: Color(0xFF2196F3),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: Colors.white, size: 22),
@@ -305,7 +283,7 @@ class _AccountScreenState extends State<AccountScreen> {
               width: 44,
               height: 44,
               decoration: const BoxDecoration(
-                color: Color(0xFF38B6FF),
+                color: Color(0xFF2196F3),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: Colors.white, size: 22),

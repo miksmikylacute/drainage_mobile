@@ -6,7 +6,7 @@ Future<void> showAppAlertDialog({
   required String title,
   required String message,
   IconData icon = Icons.info_rounded,
-  Color color = const Color(0xFF38B6FF),
+  Color color = const Color(0xFF2196F3),
 }) {
   return showDialog<void>(
     context: context,
@@ -39,13 +39,18 @@ Future<void> showAppAlertDialog({
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  height: 1.45,
-                  color: const Color(0xFF475569),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 260),
+                child: SingleChildScrollView(
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      height: 1.45,
+                      color: const Color(0xFF475569),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
