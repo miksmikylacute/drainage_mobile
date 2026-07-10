@@ -354,6 +354,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Color badgeTextColor;
 
                                 switch (report.status) {
+                                  case 'Pending':
+                                    badgeBgColor = const Color(0xFFF1F5F9);
+                                    badgeTextColor = const Color(0xFF64748B);
+                                    break;
                                   case 'Resolved':
                                     badgeBgColor = const Color(0xFFE2FBE9);
                                     badgeTextColor = const Color(0xFF10B981);

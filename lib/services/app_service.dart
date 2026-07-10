@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -286,6 +284,17 @@ class AppService {
     }
   }
 
+  static String _imageContentType(String extension) {
+    switch (extension) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
+  }
+
   static Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -304,15 +313,75 @@ class AppService {
   }
 
   static Future<DrainageReport> submitReport({
-    required File photo,
-    required String location,
+    required XFile photo,
+    required IssueLocation location,
     required String description,
   }) async {
-    throw Exception('Backend integration is not connected yet.');
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    final imageUrl = await _uploadReportPhoto(photo);
+    final cleanDescription = description.trim();
+    final title = cleanDescription.isEmpty
+        ? 'Drainage Issue'
+        : cleanDescription.split('\n').first.trim();
+
+    final reportData = await _client
+        .from('reports')
+        .insert({
+          'user_id': user.id,
+          'title': title.length > 80 ? title.substring(0, 80) : title,
+          'description': cleanDescription,
+          'image_url': imageUrl,
+          'latitude': location.latitude,
+          'longitude': location.longitude,
+          'location_label': location.label,
+          'status': 'Pending',
+        })
+        .select('*, users(fullname,phone,email,avatar_url)')
+        .single();
+
+    return DrainageReport.fromSupabase(reportData);
+  }
+
+  static Future<String> _uploadReportPhoto(XFile photo) async {
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    final extension = photo.name.split('.').last.toLowerCase();
+    final safeExtension = ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
+        ? extension
+        : 'jpg';
+    final path =
+        '${user.id}/report-${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
+    final bytes = await photo.readAsBytes();
+
+    await _client.storage
+        .from('report-photos')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            contentType: _imageContentType(safeExtension),
+          ),
+        );
+
+    return _client.storage.from('report-photos').getPublicUrl(path);
   }
 
   static Future<List<DrainageReport>> fetchMyReports() async {
-    return [];
+    final user = _currentUser;
+    if (user == null) return [];
+
+    final rows = await _client
+        .from('reports')
+        .select('*, users(fullname,phone,email,avatar_url)')
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false);
+
+    return (rows as List<dynamic>)
+        .map((row) => DrainageReport.fromSupabase(row as Map<String, dynamic>))
+        .toList();
   }
 
   static Future<List<AppNotification>> fetchNotifications() async {

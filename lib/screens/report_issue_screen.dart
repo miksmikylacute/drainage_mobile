@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,12 +15,12 @@ class ReportIssueScreen extends StatefulWidget {
 }
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
-  File? _selectedImage;
+  XFile? _selectedImage;
   final _descriptionController = TextEditingController();
   final _picker = ImagePicker();
   int _charCount = 0;
   bool _isSubmitting = false;
-  String? _selectedLocation;
+  IssueLocation? _selectedLocation;
 
   @override
   void initState() {
@@ -48,7 +48,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       );
       if (pickedFile != null) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImage = pickedFile;
         });
       }
     } catch (e) {
@@ -539,6 +539,28 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     }
   }
 
+  Widget _buildSelectedImage() {
+    final image = _selectedImage;
+    if (image == null) return const SizedBox.shrink();
+
+    if (kIsWeb) {
+      return Image.network(image.path, fit: BoxFit.cover);
+    }
+
+    return FutureBuilder<Uint8List>(
+      future: image.readAsBytes(),
+      builder: (context, snapshot) {
+        final bytes = snapshot.data;
+        if (bytes == null) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF38B6FF)),
+          );
+        }
+        return Image.memory(bytes, fit: BoxFit.cover);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -629,10 +651,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                 ? Stack(
                                     fit: StackFit.expand,
                                     children: [
-                                      Image.file(
-                                        _selectedImage!,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      _buildSelectedImage(),
                                       // Retake Overlay badge
                                       Positioned(
                                         right: 12,
@@ -753,7 +772,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                               builder: (context) => const MapScreen(),
                             ),
                           );
-                          if (result != null && mounted) {
+                          if (result is IssueLocation && mounted) {
                             setState(() {
                               _selectedLocation = result;
                             });
@@ -785,7 +804,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _selectedLocation ?? 'Tap to set location',
+                                  _selectedLocation?.label ??
+                                      'Tap to set location',
                                   style: GoogleFonts.poppins(
                                     color: Colors.black87,
                                     fontSize: 14,

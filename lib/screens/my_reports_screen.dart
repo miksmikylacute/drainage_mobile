@@ -96,6 +96,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                         child: Row(
                           children: [
                             'All',
+                            'Pending',
                             'In Progress',
                             'Resolved',
                             'Rejected',
@@ -244,6 +245,10 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     Color badgeTextColor;
 
     switch (report.status) {
+      case 'Pending':
+        badgeBgColor = const Color(0xFFF1F5F9);
+        badgeTextColor = const Color(0xFF64748B);
+        break;
       case 'Resolved':
         badgeBgColor = const Color(0xFFE2FBE9);
         badgeTextColor = const Color(0xFF10B981);

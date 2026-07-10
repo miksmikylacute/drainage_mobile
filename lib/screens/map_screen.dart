@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../models/drainage_report.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -24,6 +27,46 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _updateLocationText(_currentCenter);
+    _centerOnCurrentLocation();
+  }
+
+  Future<void> _centerOnCurrentLocation() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) return;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      final nextCenter = LatLng(position.latitude, position.longitude);
+      if (!mounted) return;
+      if (!_isWithinBoundary(nextCenter)) return;
+
+      _currentCenter = nextCenter;
+      _updateLocationText(nextCenter);
+      _mapController.move(nextCenter, 18.0);
+    } catch (_) {
+      // Keep the Mauban fallback center when GPS is unavailable.
+    }
+  }
+
+  bool _isWithinBoundary(LatLng point) {
+    return point.latitude >= _southWestBoundary.latitude &&
+        point.latitude <= _northEastBoundary.latitude &&
+        point.longitude >= _southWestBoundary.longitude &&
+        point.longitude <= _northEastBoundary.longitude;
   }
 
   // Reverse geocoding simulator based on Mauban coordinates
@@ -247,8 +290,14 @@ class _MapScreenState extends State<MapScreen> {
                 // Button
                 ElevatedButton(
                   onPressed: () {
-                    // Pass the simulated address back to report screen
-                    Navigator.pop(context, _currentLocationText);
+                    Navigator.pop(
+                      context,
+                      IssueLocation(
+                        label: _currentLocationText,
+                        latitude: _currentCenter.latitude,
+                        longitude: _currentCenter.longitude,
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF38B6FF),
