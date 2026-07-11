@@ -15,25 +15,36 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
+  static const LatLng _maubanSouthWest = LatLng(14.1000, 121.6200);
+  static const LatLng _maubanNorthEast = LatLng(14.2800, 121.8200);
   LatLng _currentCenter = const LatLng(14.1894, 121.7226); // Mauban center
-  String _currentLocationText = "Loading location...";
+  String _currentLocationText = 'Finding your current location...';
   bool _isDragging = false;
-
-  // Mauban boundary limits
-  final LatLng _southWestBoundary = const LatLng(14.1000, 121.6200);
-  final LatLng _northEastBoundary = const LatLng(14.2800, 121.8200);
+  bool _isLocating = true;
 
   @override
   void initState() {
     super.initState();
-    _updateLocationText(_currentCenter);
-    _centerOnCurrentLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerOnCurrentLocation();
+    });
   }
 
   Future<void> _centerOnCurrentLocation() async {
+    if (!mounted) return;
+    setState(() {
+      _isLocating = true;
+      _currentLocationText = 'Finding your current location...';
+    });
+
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
-      if (!enabled) return;
+      if (!enabled) {
+        _useFallbackLocation(
+          'Location service is turned off. Drag the map to select the issue location.',
+        );
+        return;
+      }
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -42,35 +53,62 @@ class _MapScreenState extends State<MapScreen> {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
+        _useFallbackLocation(
+          'Location permission is required. Drag the map to select the issue location.',
+        );
         return;
+      }
+
+      final lastKnownPosition = await Geolocator.getLastKnownPosition();
+      if (lastKnownPosition != null) {
+        _moveToPosition(lastKnownPosition);
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.bestForNavigation,
+          timeLimit: Duration(seconds: 15),
         ),
       );
-      final nextCenter = LatLng(position.latitude, position.longitude);
-      if (!mounted) return;
-      if (!_isWithinBoundary(nextCenter)) return;
-
-      _currentCenter = nextCenter;
-      _updateLocationText(nextCenter);
-      _mapController.move(nextCenter, 18.0);
+      _moveToPosition(position);
     } catch (_) {
-      // Keep the Mauban fallback center when GPS is unavailable.
+      _useFallbackLocation(
+        'Unable to get GPS location. Drag the map to select the issue location.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+      }
     }
   }
 
-  bool _isWithinBoundary(LatLng point) {
-    return point.latitude >= _southWestBoundary.latitude &&
-        point.latitude <= _northEastBoundary.latitude &&
-        point.longitude >= _southWestBoundary.longitude &&
-        point.longitude <= _northEastBoundary.longitude;
+  void _moveToPosition(Position position) {
+    if (!mounted) return;
+
+    final nextCenter = LatLng(position.latitude, position.longitude);
+    setState(() {
+      _currentCenter = nextCenter;
+      _currentLocationText = _formatLocationText(nextCenter);
+    });
+    _mapController.move(nextCenter, 18.0);
+  }
+
+  void _useFallbackLocation(String message) {
+    if (!mounted) return;
+
+    setState(() {
+      _currentLocationText = message;
+    });
   }
 
   // Reverse geocoding simulator based on Mauban coordinates
-  void _updateLocationText(LatLng position) {
+  String _formatLocationText(LatLng position) {
+    if (!_isWithinMaubanLabelArea(position)) {
+      return 'Pinned location (${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)})';
+    }
+
     // Generate realistic Mauban address names based on coordinate grid quadrants
     String barangay;
     String street;
@@ -95,8 +133,19 @@ class _MapScreenState extends State<MapScreen> {
       street = "Real Street, near Municipal Hall";
     }
 
+    return "$street, $barangay";
+  }
+
+  bool _isWithinMaubanLabelArea(LatLng point) {
+    return point.latitude >= _maubanSouthWest.latitude &&
+        point.latitude <= _maubanNorthEast.latitude &&
+        point.longitude >= _maubanSouthWest.longitude &&
+        point.longitude <= _maubanNorthEast.longitude;
+  }
+
+  void _updateLocationText(LatLng position) {
     setState(() {
-      _currentLocationText = "$street, $barangay";
+      _currentLocationText = _formatLocationText(position);
     });
   }
 
@@ -113,10 +162,6 @@ class _MapScreenState extends State<MapScreen> {
               initialZoom: 18.0,
               minZoom: 12.0,
               maxZoom: 22.0,
-              // Constrain map movements to Mauban area
-              cameraConstraint: CameraConstraint.contain(
-                bounds: LatLngBounds(_southWestBoundary, _northEastBoundary),
-              ),
               onPointerDown: (event, point) {
                 setState(() {
                   _isDragging = true;
@@ -229,7 +274,9 @@ class _MapScreenState extends State<MapScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Selected Location',
+                          _isLocating
+                              ? 'Current Location'
+                              : 'Selected Location',
                           style: GoogleFonts.poppins(
                             color: Colors.black54,
                             fontWeight: FontWeight.bold,
@@ -252,6 +299,28 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          Positioned(
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 104,
+            child: FloatingActionButton.small(
+              heroTag: 'center-on-current-location',
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF0066FF),
+              elevation: 4,
+              onPressed: _isLocating ? null : _centerOnCurrentLocation,
+              child: _isLocating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF0066FF),
+                      ),
+                    )
+                  : const Icon(Icons.my_location_rounded),
             ),
           ),
 

@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,7 @@ class ReportIssueScreen extends StatefulWidget {
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
   XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _picker = ImagePicker();
@@ -50,8 +52,11 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        final imageBytes = await pickedFile.readAsBytes();
+        if (!mounted) return;
         setState(() {
           _selectedImage = pickedFile;
+          _selectedImageBytes = imageBytes;
         });
       }
     } catch (e) {
@@ -579,25 +584,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   }
 
   Widget _buildSelectedImage() {
-    final image = _selectedImage;
-    if (image == null) return const SizedBox.shrink();
+    final imageBytes = _selectedImageBytes;
+    if (imageBytes == null) return const SizedBox.shrink();
 
-    if (kIsWeb) {
-      return Image.network(image.path, fit: BoxFit.cover);
-    }
-
-    return FutureBuilder<Uint8List>(
-      future: image.readAsBytes(),
-      builder: (context, snapshot) {
-        final bytes = snapshot.data;
-        if (bytes == null) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xFF2196F3)),
-          );
-        }
-        return Image.memory(bytes, fit: BoxFit.cover);
-      },
-    );
+    return Image.memory(imageBytes, fit: BoxFit.cover, gaplessPlayback: true);
   }
 
   @override
