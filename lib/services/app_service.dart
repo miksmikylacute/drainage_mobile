@@ -54,6 +54,56 @@ class AppNotification {
   }
 }
 
+class ResidentDashboardSummary {
+  final List<DrainageReport> recentReports;
+  final List<AppNotification> latestNotifications;
+  final Map<String, int> statusCounts;
+  final int unreadNotificationCount;
+
+  const ResidentDashboardSummary({
+    required this.recentReports,
+    required this.latestNotifications,
+    required this.statusCounts,
+    required this.unreadNotificationCount,
+  });
+
+  int get totalReports =>
+      statusCounts.values.fold(0, (sum, count) => sum + count);
+
+  int countFor(String status) => statusCounts[status] ?? 0;
+}
+
+class ReportLog {
+  final String id;
+  final String reportId;
+  final String? oldStatus;
+  final String newStatus;
+  final String remarks;
+  final DateTime createdAt;
+
+  const ReportLog({
+    required this.id,
+    required this.reportId,
+    this.oldStatus,
+    required this.newStatus,
+    required this.remarks,
+    required this.createdAt,
+  });
+
+  factory ReportLog.fromSupabase(Map<String, dynamic> data) {
+    final createdAtValue = data['created_at'];
+
+    return ReportLog(
+      id: '${data['id']}',
+      reportId: '${data['report_id']}',
+      oldStatus: data['old_status'] == null ? null : '${data['old_status']}',
+      newStatus: '${data['new_status'] ?? 'Pending'}',
+      remarks: '${data['remarks'] ?? ''}',
+      createdAt: DateTime.tryParse('${createdAtValue ?? ''}') ?? DateTime.now(),
+    );
+  }
+}
+
 class AppService {
   static AppUser? _currentUser;
 
@@ -330,22 +380,23 @@ class AppService {
   static Future<DrainageReport> submitReport({
     required XFile photo,
     required IssueLocation location,
+    required String title,
     required String description,
   }) async {
     final user = _currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
     final imageUrl = await _uploadReportPhoto(photo);
+    final cleanTitle = title.trim();
     final cleanDescription = description.trim();
-    final title = cleanDescription.isEmpty
-        ? 'Drainage Issue'
-        : cleanDescription.split('\n').first.trim();
 
     final reportData = await _client
         .from('reports')
         .insert({
           'user_id': user.id,
-          'title': title.length > 80 ? title.substring(0, 80) : title,
+          'title': cleanTitle.length > 80
+              ? cleanTitle.substring(0, 80)
+              : cleanTitle,
           'description': cleanDescription,
           'image_url': imageUrl,
           'latitude': location.latitude,
@@ -399,6 +450,59 @@ class AppService {
         .toList();
   }
 
+  static Future<DrainageReport> fetchReportById(String reportId) async {
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    final row = await _client
+        .from('reports')
+        .select('*, users(fullname,phone,email,avatar_url)')
+        .eq('id', reportId)
+        .single();
+
+    return DrainageReport.fromSupabase(row);
+  }
+
+  static Future<ResidentDashboardSummary>
+  fetchResidentDashboardSummary() async {
+    final user = _currentUser;
+    if (user == null) {
+      return const ResidentDashboardSummary(
+        recentReports: [],
+        latestNotifications: [],
+        statusCounts: {},
+        unreadNotificationCount: 0,
+      );
+    }
+
+    final results = await Future.wait<dynamic>([
+      fetchMyReports(),
+      fetchNotifications(),
+    ]);
+
+    final reports = results[0] as List<DrainageReport>;
+    final notifications = results[1] as List<AppNotification>;
+    final statusCounts = <String, int>{
+      'Pending': 0,
+      'In Progress': 0,
+      'Resolved': 0,
+      'Rejected': 0,
+    };
+
+    for (final report in reports) {
+      statusCounts[report.status] = (statusCounts[report.status] ?? 0) + 1;
+    }
+
+    return ResidentDashboardSummary(
+      recentReports: reports.take(2).toList(),
+      latestNotifications: notifications.take(2).toList(),
+      statusCounts: statusCounts,
+      unreadNotificationCount: notifications
+          .where((notification) => !notification.isRead)
+          .length,
+    );
+  }
+
   static Future<List<AppNotification>> fetchNotifications() async {
     final user = _currentUser;
     if (user == null) return [];
@@ -411,6 +515,21 @@ class AppService {
 
     return (rows as List<dynamic>)
         .map((row) => AppNotification.fromSupabase(row as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<List<ReportLog>> fetchReportLogs(String reportId) async {
+    final user = _currentUser;
+    if (user == null) return [];
+
+    final rows = await _client
+        .from('report_logs')
+        .select('id,report_id,old_status,new_status,remarks,created_at')
+        .eq('report_id', reportId)
+        .order('created_at', ascending: false);
+
+    return (rows as List<dynamic>)
+        .map((row) => ReportLog.fromSupabase(row as Map<String, dynamic>))
         .toList();
   }
 
@@ -461,6 +580,47 @@ class AppService {
             column: 'user_id',
             value: user.id,
           ),
+          callback: (_) => onChange(),
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  static RealtimeChannel? subscribeToMyReportChanges(void Function() onChange) {
+    final user = _currentUser;
+    if (user == null) return null;
+
+    final channel = _client
+        .channel('resident-reports-${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'reports',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (_) => onChange(),
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  static RealtimeChannel? subscribeToReportLogChanges(
+    void Function() onChange,
+  ) {
+    final user = _currentUser;
+    if (user == null) return null;
+
+    final channel = _client
+        .channel('resident-report-logs-${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'report_logs',
           callback: (_) => onChange(),
         )
         .subscribe();

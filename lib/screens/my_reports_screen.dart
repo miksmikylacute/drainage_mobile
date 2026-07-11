@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/drainage_report.dart';
 import '../services/app_service.dart';
 import 'app_header.dart';
+import 'report_detail_sheet.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -15,11 +17,29 @@ class MyReportsScreen extends StatefulWidget {
 class _MyReportsScreenState extends State<MyReportsScreen> {
   String _selectedTab = 'All';
   late Future<List<DrainageReport>> _reportsFuture;
+  RealtimeChannel? _reportsChannel;
+  RealtimeChannel? _reportLogsChannel;
 
   @override
   void initState() {
     super.initState();
     _reportsFuture = AppService.fetchMyReports();
+    _reportsChannel = AppService.subscribeToMyReportChanges(_reloadReports);
+    _reportLogsChannel = AppService.subscribeToReportLogChanges(_reloadReports);
+  }
+
+  @override
+  void dispose() {
+    AppService.unsubscribeFromRealtime(_reportsChannel);
+    AppService.unsubscribeFromRealtime(_reportLogsChannel);
+    super.dispose();
+  }
+
+  void _reloadReports() {
+    if (!mounted) return;
+    setState(() {
+      _reportsFuture = AppService.fetchMyReports();
+    });
   }
 
   Future<void> _refreshReports() async {
@@ -231,96 +251,110 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         break;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: report.imageUrl.isEmpty
-                ? _buildImageFallback()
-                : Image.network(
-                    report.imageUrl,
-                    width: 70,
-                    height: 70,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildImageFallback(),
-                  ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  report.issue,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Colors.black,
-                  ),
-                ),
-                Text(
-                  report.location,
-                  style: GoogleFonts.poppins(
-                    color: Colors.black54,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  report.formattedDate,
-                  style: GoogleFonts.poppins(
-                    color: Colors.black38,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: badgeBgColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    report.status,
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _showReportDetails(report),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16.0),
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: report.imageUrl.isEmpty
+                  ? _buildImageFallback()
+                  : Image.network(
+                      report.imageUrl,
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildImageFallback(),
+                    ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    report.issue,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
-                      color: badgeTextColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Colors.black,
                     ),
                   ),
-                ),
-              ],
+                  Text(
+                    report.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.black54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    report.formattedDate,
+                    style: GoogleFonts.poppins(
+                      color: Colors.black38,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeBgColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      report.status,
+                      style: GoogleFonts.poppins(
+                        color: badgeTextColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.black54,
-            size: 28,
-          ),
-        ],
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.black54,
+              size: 28,
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  Future<void> _showReportDetails(DrainageReport report) async {
+    await showReportDetailSheet(context: context, report: report);
+  }
+}
+
+extension _ReportImageFallback on _MyReportsScreenState {
   Widget _buildImageFallback() {
     return Image.asset(
       'assets/clogged_drain.png',

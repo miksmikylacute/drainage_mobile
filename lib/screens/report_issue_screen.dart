@@ -17,6 +17,7 @@ class ReportIssueScreen extends StatefulWidget {
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
   XFile? _selectedImage;
+  final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _picker = ImagePicker();
   int _charCount = 0;
@@ -35,6 +36,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   @override
   void dispose() {
+    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -384,6 +386,40 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
+                      if (_titleController.text.trim().isEmpty) ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '• ',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.black87,
+                                    fontSize: 13,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Title is required.\n',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          'Please add a short headline for your report.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       if (_descriptionController.text.trim().isEmpty) ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,6 +540,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   Future<void> _handleSubmit() async {
     if (_selectedImage == null ||
+        _titleController.text.trim().isEmpty ||
         _descriptionController.text.trim().isEmpty ||
         _selectedLocation == null) {
       _showFailureDialog();
@@ -518,6 +555,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       final report = await AppService.submitReport(
         photo: _selectedImage!,
         location: _selectedLocation!,
+        title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
       );
       if (!mounted) return;
@@ -789,9 +827,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Section 3: Describe the Issue
+                      // Section 3: Add Issue Details
                       Text(
-                        '3. Describe the Issue',
+                        '3. Add Issue Details',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -819,11 +857,36 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             TextField(
+                              controller: _titleController,
+                              maxLength: 80,
+                              textInputAction: TextInputAction.next,
+                              decoration: InputDecoration(
+                                hintText: 'Issue title',
+                                hintStyle: const TextStyle(
+                                  color: Colors.black38,
+                                  fontSize: 13,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.title_rounded,
+                                  color: Colors.black38,
+                                  size: 20,
+                                ),
+                                border: InputBorder.none,
+                                counterText: '',
+                              ),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const Divider(height: 18, color: Colors.black12),
+                            TextField(
                               controller: _descriptionController,
                               maxLines: 4,
                               maxLength: 500,
                               decoration: InputDecoration(
-                                hintText: 'Type your description here...',
+                                hintText: 'Type the full description here...',
                                 hintStyle: const TextStyle(
                                   color: Colors.black38,
                                   fontSize: 13,

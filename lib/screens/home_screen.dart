@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/drainage_report.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/app_service.dart';
 import 'account_screen.dart';
 import 'login_screen.dart';
 import 'my_reports_screen.dart';
 import 'notifications_screen.dart';
+import 'report_detail_sheet.dart';
 import 'report_issue_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,22 +17,50 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<ResidentDashboardSummary> _dashboardFuture;
   late Future<int> _unreadNotificationCountFuture;
+  RealtimeChannel? _reportsChannel;
+  RealtimeChannel? _notificationsChannel;
 
   @override
   void initState() {
     super.initState();
-    _unreadNotificationCountFuture = AppService.fetchUnreadNotificationCount();
+    _setDashboardFuture(AppService.fetchResidentDashboardSummary());
+    _reportsChannel = AppService.subscribeToMyReportChanges(_reloadDashboard);
+    _notificationsChannel = AppService.subscribeToNotificationChanges(
+      _reloadDashboard,
+    );
+  }
+
+  @override
+  void dispose() {
+    AppService.unsubscribeFromRealtime(_reportsChannel);
+    AppService.unsubscribeFromRealtime(_notificationsChannel);
+    super.dispose();
+  }
+
+  void _reloadDashboard() {
+    if (!mounted) return;
+    setState(() {
+      _setDashboardFuture(AppService.fetchResidentDashboardSummary());
+    });
   }
 
   Future<void> _refreshDashboard() async {
     await AppService.refreshCurrentUser();
-    await AppService.fetchMyReports();
+    final nextDashboard = AppService.fetchResidentDashboardSummary();
     if (!mounted) return;
     setState(() {
-      _unreadNotificationCountFuture =
-          AppService.fetchUnreadNotificationCount();
+      _setDashboardFuture(nextDashboard);
     });
+    await nextDashboard;
+  }
+
+  void _setDashboardFuture(Future<ResidentDashboardSummary> dashboardFuture) {
+    _dashboardFuture = dashboardFuture;
+    _unreadNotificationCountFuture = dashboardFuture.then(
+      (summary) => summary.unreadNotificationCount,
+    );
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
@@ -258,10 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                                 if (!context.mounted) return;
-                                setState(() {
-                                  _unreadNotificationCountFuture =
-                                      AppService.fetchUnreadNotificationCount();
-                                });
+                                _reloadDashboard();
                               },
                             ),
                             _buildActionCard(
@@ -311,8 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 12),
 
                         // Recent Report List
-                        FutureBuilder<List<DrainageReport>>(
-                          future: AppService.fetchMyReports(),
+                        FutureBuilder<ResidentDashboardSummary>(
+                          future: _dashboardFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -325,9 +351,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                             }
-                            if (snapshot.hasError ||
-                                !snapshot.hasData ||
-                                snapshot.data!.isEmpty) {
+                            final recentReports =
+                                snapshot.data?.recentReports ?? [];
+                            if (snapshot.hasError || recentReports.isEmpty) {
                               return Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(24),
@@ -357,10 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             }
 
-                            final recentReports = snapshot.data!
-                                .take(3)
-                                .toList();
-
                             return Column(
                               children: recentReports.map((report) {
                                 Color badgeBgColor;
@@ -386,116 +408,129 @@ class _HomeScreenState extends State<HomeScreen> {
                                     break;
                                 }
 
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 12.0),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.04,
-                                        ),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
+                                return InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () => showReportDetailSheet(
+                                    context: context,
+                                    report: report,
                                   ),
-                                  child: Row(
-                                    children: [
-                                      // Image
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: report.imageUrl.isNotEmpty
-                                            ? Image.network(
-                                                report.imageUrl,
-                                                width: 70,
-                                                height: 70,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (
-                                                      context,
-                                                      error,
-                                                      stackTrace,
-                                                    ) {
-                                                      return Image.asset(
-                                                        'assets/clogged_drain.png',
-                                                        width: 70,
-                                                        height: 70,
-                                                        fit: BoxFit.cover,
-                                                      );
-                                                    },
-                                              )
-                                            : Image.asset(
-                                                'assets/clogged_drain.png',
-                                                width: 70,
-                                                height: 70,
-                                                fit: BoxFit.cover,
-                                              ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      // Details
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              report.issue,
-                                              style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 15,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                            Text(
-                                              report.location,
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.black54,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              report.formattedDate,
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.black38,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            // Badge for status
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 3,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: badgeBgColor,
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                report.status,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12.0),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.04,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        // Image
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: report.imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  report.imageUrl,
+                                                  width: 70,
+                                                  height: 70,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Image.asset(
+                                                          'assets/clogged_drain.png',
+                                                          width: 70,
+                                                          height: 70,
+                                                          fit: BoxFit.cover,
+                                                        );
+                                                      },
+                                                )
+                                              : Image.asset(
+                                                  'assets/clogged_drain.png',
+                                                  width: 70,
+                                                  height: 70,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        // Details
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                report.issue,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: GoogleFonts.poppins(
-                                                  color: badgeTextColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                  color: Colors.black,
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                              Text(
+                                                report.location,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.black54,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                report.formattedDate,
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.black38,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              // Badge for status
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 3,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: badgeBgColor,
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: Text(
+                                                  report.status,
+                                                  style: GoogleFonts.poppins(
+                                                    color: badgeTextColor,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      const Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: Colors.black54,
-                                        size: 28,
-                                      ),
-                                    ],
+                                        const Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: Colors.black54,
+                                          size: 28,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               }).toList(),
@@ -526,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Help keep out community clean by reporting drainage problems.',
+                                  'Help keep our community clean by reporting drainage problems.',
                                   style: GoogleFonts.poppins(
                                     color: Colors.black87,
                                     fontSize: 11,
