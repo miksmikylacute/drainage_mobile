@@ -106,34 +106,38 @@ class _MapScreenState extends State<MapScreen> {
   // Reverse geocoding simulator based on Mauban coordinates
   String _formatLocationText(LatLng position) {
     if (!_isWithinMaubanLabelArea(position)) {
-      return 'Pinned location (${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)})';
+      return 'Selected map area, near pinned location ${_formatPinnedCoordinates(position)}';
     }
 
     // Generate realistic Mauban address names based on coordinate grid quadrants
     String barangay;
-    String street;
+    String landmark;
 
     double lat = position.latitude;
     double lng = position.longitude;
 
     if (lat > 14.1920) {
       barangay = "Barangay Luya-luya, Mauban";
-      street = "Purok 3, Gomez Street";
+      landmark = "near Gomez Street / Purok 3";
     } else if (lat < 14.1850) {
       barangay = "Barangay Rizal, Mauban";
-      street = "Purok 2, Quezon Avenue";
+      landmark = "near Quezon Avenue / Purok 2";
     } else if (lng > 121.7280) {
       barangay = "Barangay Polo, Mauban";
-      street = "Purok 4, Coastal Road";
+      landmark = "near Coastal Road / Purok 4";
     } else if (lng < 121.7180) {
       barangay = "Barangay Bagong Silang, Mauban";
-      street = "Purok 1, San Lorenzo Street";
+      landmark = "near San Lorenzo Street / Purok 1";
     } else {
       barangay = "Poblacion, Mauban Town Center";
-      street = "Real Street, near Municipal Hall";
+      landmark = "near Real Street / Municipal Hall";
     }
 
-    return "$street, $barangay";
+    return "$barangay, $landmark - pinned location ${_formatPinnedCoordinates(position)}";
+  }
+
+  String _formatPinnedCoordinates(LatLng position) {
+    return '(${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)})';
   }
 
   bool _isWithinMaubanLabelArea(LatLng point) {
