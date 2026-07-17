@@ -290,7 +290,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   child: Text(
                     'Back to Home',
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF0066FF),
+                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),

@@ -99,7 +99,7 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
                             Text(
                               report.displayId,
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFF0066FF),
+                                color: Colors.black,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -439,13 +439,13 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
   Color _statusColor(String status) {
     switch (status) {
       case 'Pending':
-        return const Color(0xFFEF4444);
+        return const Color(0xFFFFC107);
       case 'In Progress':
-        return const Color(0xFF2563EB);
+        return const Color(0xFF3B82F6);
       case 'Resolved':
-        return const Color(0xFF10B981);
+        return const Color(0xFF22C55E);
       case 'Rejected':
-        return const Color(0xFF8B5CF6);
+        return const Color(0xFFEF4444);
       default:
         return const Color(0xFF64748B);
     }

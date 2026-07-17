@@ -52,9 +52,19 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               const Spacer(flex: 3),
               Image.asset(
-                'assets/drainage.png',
-                height: 180,
+                'assets/drainage_clean.png',
+                height: 160,
                 fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'REPORT DRAINAGE',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF193864),
+                  letterSpacing: 1.2,
+                ),
               ),
               const Spacer(flex: 3),
               const SizedBox(
@@ -63,14 +73,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: CircularProgressIndicator(
                   color: Color(0xFF2196F3),
                   strokeWidth: 2.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Loading...',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.grey[600],
                 ),
               ),
               const SizedBox(height: 48),

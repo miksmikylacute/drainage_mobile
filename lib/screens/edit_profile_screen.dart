@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/app_service.dart';
+import 'app_header.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -104,30 +105,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         bottom: false,
         child: Column(
           children: [
-            // ── App Bar ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.black,
-                      size: 28,
-                    ),
-                  ),
-                  Text(
-                    'Edit Profile',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            AppHeader(title: 'Edit Profile'),
 
             // ── White Body ───────────────────────────────────────────
             Expanded(
@@ -333,7 +311,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF2196F3),
+                              color: Colors.black,
                             ),
                           ),
                         ),
@@ -363,7 +341,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 13,
-            color: Colors.black54,
+            color: Colors.black,
             fontWeight: FontWeight.w500,
           ),
         ),

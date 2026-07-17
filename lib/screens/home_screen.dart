@@ -328,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF0066FF),
+                                  color: Colors.black,
                                 ),
                               ),
                             ),
@@ -390,21 +390,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 switch (report.status) {
                                   case 'Pending':
-                                    badgeBgColor = const Color(0xFFF1F5F9);
-                                    badgeTextColor = const Color(0xFF64748B);
+                                    badgeBgColor = const Color(0xFFFFF9E6);
+                                    badgeTextColor = const Color(0xFFFFC107);
                                     break;
                                   case 'Resolved':
-                                    badgeBgColor = const Color(0xFFE2FBE9);
-                                    badgeTextColor = const Color(0xFF10B981);
+                                    badgeBgColor = const Color(0xFFE6FCF2);
+                                    badgeTextColor = const Color(0xFF22C55E);
                                     break;
                                   case 'Rejected':
-                                    badgeBgColor = const Color(0xFFFCE8E6);
+                                    badgeBgColor = const Color(0xFFFEF2F2);
                                     badgeTextColor = const Color(0xFFEF4444);
                                     break;
                                   case 'In Progress':
                                   default:
-                                    badgeBgColor = const Color(0xFFFFEAD6);
-                                    badgeTextColor = const Color(0xFFE67E22);
+                                    badgeBgColor = const Color(0xFFEBF5FF);
+                                    badgeTextColor = const Color(0xFF3B82F6);
                                     break;
                                 }
 

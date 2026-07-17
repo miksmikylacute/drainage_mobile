@@ -139,14 +139,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   Icons.done_all_rounded,
                                   size: 18,
                                 ),
-                                label: const Text('Read all'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFF0066FF),
-                                  disabledForegroundColor: Colors.black26,
-                                  textStyle: GoogleFonts.poppins(
+                                label: Text(
+                                  'Read all',
+                                  style: GoogleFonts.poppins(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                   ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.black,
+                                  disabledForegroundColor: Colors.black26,
                                 ),
                               ),
                             ],
@@ -274,17 +276,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: item.isRead ? Colors.white : const Color(0xFF0066FF),
+        color: item.isRead ? Colors.white : const Color(0xFFEFCA38),
         shape: BoxShape.circle,
         border: item.isRead
-            ? Border.all(color: const Color(0xFF0066FF), width: 2)
+            ? Border.all(color: const Color(0xFFEFCA38), width: 2)
             : null,
       ),
       child: Icon(
         item.isRead
             ? Icons.notifications_none_rounded
             : Icons.notifications_rounded,
-        color: item.isRead ? const Color(0xFF0066FF) : Colors.white,
+        color: item.isRead ? const Color(0xFFEFCA38) : Colors.white,
         size: 24,
       ),
     );

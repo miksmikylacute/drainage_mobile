@@ -92,11 +92,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
-                      Image.asset(
-                        'assets/drainage.png',
-                        height: 130,
-                        fit: BoxFit.contain,
+                      // Logo in white circle
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          'assets/drainage_clean.png',
+                          height: 100,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -111,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Please login to continue',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: const Color(0xB3FFFFFF),
+                          color: Colors.white,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -240,6 +247,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return null;
                               },
                             ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () {},
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
 
@@ -304,7 +326,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Text(
                                     'Register here',
                                     style: GoogleFonts.poppins(
-                                      color: const Color(0xFF0066FF),
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
