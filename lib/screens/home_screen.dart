@@ -63,72 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _confirmLogout(BuildContext context) async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Text(
-            'Logout',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          content: Text(
-            'Do you want to logout?',
-            style: GoogleFonts.poppins(color: Colors.black87, fontSize: 15),
-          ),
-          actionsPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                'Logout',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
 
-    if (shouldLogout != true) return;
-
-    await AppService.signOut();
-    if (!context.mounted) return;
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +137,74 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
+                  // Top Right Icons
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const NotificationsScreen(),
+                                ),
+                              );
+                              if (!context.mounted) return;
+                              _reloadDashboard();
+                            },
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: FutureBuilder<int>(
+                              future: _unreadNotificationCountFuture,
+                              builder: (context, snapshot) {
+                                final count = snapshot.data ?? 0;
+                                if (count <= 0) return const SizedBox.shrink();
+
+                                return Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: const Color(0xFF2196F3),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -239,18 +242,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Quick Actions Grid (2x2)
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 1.15,
+                        // Quick Actions Row (2 items)
+                        Row(
                           children: [
-                            _buildActionCard(
+                            _buildExpandedActionCard(
                               imagePath: 'assets/icon_report_issue.png',
                               title: 'Report Issue',
+                              subtitle: 'Report drainage problems\nin your area.',
+                              color: const Color(0xFF1E88E5), // Blue
+                              bgColor: const Color(0xFFE3F2FD), // Light blue
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -261,9 +261,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               },
                             ),
-                            _buildActionCard(
+                            const SizedBox(width: 16),
+                            _buildExpandedActionCard(
                               imagePath: 'assets/icon_my_reports.png',
                               title: 'My Reports',
+                              subtitle: 'View and track the status\nof your reports.',
+                              color: const Color(0xFF22C55E), // Green
+                              bgColor: const Color(0xFFDCFCE7), // Light green
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -272,29 +276,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const MyReportsScreen(),
                                   ),
                                 );
-                              },
-                            ),
-                            _buildActionCard(
-                              imagePath: 'assets/icon_notifications.png',
-                              title: 'Notification',
-                              badgeCountFuture: _unreadNotificationCountFuture,
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const NotificationsScreen(),
-                                  ),
-                                );
-                                if (!context.mounted) return;
-                                _reloadDashboard();
-                              },
-                            ),
-                            _buildActionCard(
-                              imagePath: 'assets/icon_logout.png',
-                              title: 'Logout',
-                              onTap: () {
-                                _confirmLogout(context);
                               },
                             ),
                           ],
@@ -584,96 +565,86 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActionCard({
+  Widget _buildExpandedActionCard({
     required String imagePath,
     required String title,
+    required String subtitle,
+    required Color color,
+    required Color bgColor,
     required VoidCallback onTap,
-    Future<int>? badgeCountFuture,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Image.asset(
-                        imagePath,
-                        width: 46,
-                        height: 46,
-                        fit: BoxFit.contain,
-                      ),
-                      if (badgeCountFuture != null)
-                        Positioned(
-                          top: -8,
-                          right: -10,
-                          child: FutureBuilder<int>(
-                            future: badgeCountFuture,
-                            builder: (context, snapshot) {
-                              final count = snapshot.data ?? 0;
-                              if (count <= 0) return const SizedBox.shrink();
-
-                              return Container(
-                                constraints: const BoxConstraints(
-                                  minWidth: 20,
-                                  minHeight: 20,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444),
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  count > 99 ? '99+' : '$count',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    height: 1,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Image.asset(
+                    imagePath,
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.contain,
+                    color: bgColor,
+                    colorBlendMode: BlendMode.multiply,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

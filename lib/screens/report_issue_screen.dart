@@ -19,12 +19,22 @@ class ReportIssueScreen extends StatefulWidget {
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
-  final _titleController = TextEditingController();
+  String? _selectedIssueType;
+  final _specifyController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _picker = ImagePicker();
   int _charCount = 0;
   bool _isSubmitting = false;
   IssueLocation? _selectedLocation;
+
+  final List<String> _issueTypes = [
+    'Clogged Drainage',
+    'Overflowing Canal',
+    'Leaking Pipe',
+    'Slow Water Flow',
+    'Minor Flooding',
+    'Others',
+  ];
 
   @override
   void initState() {
@@ -38,7 +48,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
+    _specifyController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -391,7 +401,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
-                      if (_titleController.text.trim().isEmpty) ...[
+                      if (_selectedIssueType == null ||
+                          (_selectedIssueType == 'Others' &&
+                              _specifyController.text.trim().isEmpty)) ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -408,48 +420,15 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: 'Title is required.\n',
+                                      text: 'Issue type is required.\n',
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const TextSpan(
-                                      text:
-                                          'Please add a short headline for your report.',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      if (_descriptionController.text.trim().isEmpty) ...[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '• ',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Expanded(
-                              child: RichText(
-                                text: TextSpan(
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.black87,
-                                    fontSize: 13,
-                                  ),
-                                  children: [
                                     TextSpan(
-                                      text: 'Description is required.\n',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const TextSpan(
-                                      text:
-                                          'Please add description to your current report.',
+                                      text: _selectedIssueType == 'Others'
+                                          ? 'Please specify the issue type.'
+                                          : 'Please select the issue type for your report.',
                                     ),
                                   ],
                                 ),
@@ -529,7 +508,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   child: Text(
                     'Go to Dashboard',
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF0066FF),
+                      color: Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -544,9 +523,12 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    final hasIssueType = _selectedIssueType != null &&
+        (_selectedIssueType != 'Others' ||
+            _specifyController.text.trim().isNotEmpty);
+
     if (_selectedImage == null ||
-        _titleController.text.trim().isEmpty ||
-        _descriptionController.text.trim().isEmpty ||
+        !hasIssueType ||
         _selectedLocation == null) {
       _showFailureDialog();
       return;
@@ -557,10 +539,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     });
 
     try {
+      final titleText = _selectedIssueType == 'Others'
+          ? _specifyController.text.trim()
+          : _selectedIssueType!;
+
       final report = await AppService.submitReport(
         photo: _selectedImage!,
         location: _selectedLocation!,
-        title: _titleController.text.trim(),
+        title: titleText,
         description: _descriptionController.text.trim(),
       );
       if (!mounted) return;
@@ -588,6 +574,41 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     if (imageBytes == null) return const SizedBox.shrink();
 
     return Image.memory(imageBytes, fit: BoxFit.cover, gaplessPlayback: true);
+  }
+
+  Widget _buildSectionHeader(String number, String title) {
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: const BoxDecoration(
+            color: Color(0xFF2196F3),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            number,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -618,14 +639,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Section 1: Take/Upload Photo
-                      Text(
-                        '1. Take / Upload Photo',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
+                      _buildSectionHeader('1', 'Take / Upload Photo'),
                       const SizedBox(height: 12),
 
                       // Dashed Area (or Display Captured Image)
@@ -748,14 +762,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       const SizedBox(height: 24),
 
                       // Section 2: Select Location
-                      Text(
-                        '2. Select Location',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
+                      _buildSectionHeader('2', 'Select Location'),
                       const SizedBox(height: 12),
                       GestureDetector(
                         onTap: () async {
@@ -817,15 +824,138 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Section 3: Add Issue Details
-                      Text(
-                        '3. Add Issue Details',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                      // Section 3: Select Issue Type
+                      _buildSectionHeader('3', 'Select Issue Type'),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Please select the issue type',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ..._issueTypes.map((type) {
+                              final isSelected = _selectedIssueType == type;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedIssueType = type;
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            isSelected
+                                                ? Icons.radio_button_checked_rounded
+                                                : Icons.radio_button_off_rounded,
+                                            color: isSelected
+                                                ? const Color(0xFF2196F3)
+                                                : Colors.black38,
+                                            size: 22,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            type,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                              color: isSelected
+                                                  ? Colors.black
+                                                  : Colors.black87,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  if (type == 'Others') ...[
+                                    const SizedBox(height: 4),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 34.0),
+                                      child: TextField(
+                                        controller: _specifyController,
+                                        onTap: () {
+                                          if (_selectedIssueType != 'Others') {
+                                            setState(() {
+                                              _selectedIssueType = 'Others';
+                                            });
+                                          }
+                                        },
+                                        decoration: InputDecoration(
+                                          hintText: 'Please specify...',
+                                          hintStyle: GoogleFonts.poppins(
+                                            color: Colors.black38,
+                                            fontSize: 13,
+                                          ),
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 10,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: const BorderSide(
+                                              color: Colors.black12,
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: const BorderSide(
+                                              color: Colors.black12,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF2196F3),
+                                            ),
+                                          ),
+                                        ),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                ],
+                              );
+                            }),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 24),
+
+                      // Section 4: Additional Description (Optional)
+                      _buildSectionHeader('4', 'Additional Description (Optional)'),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -847,36 +977,11 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             TextField(
-                              controller: _titleController,
-                              maxLength: 80,
-                              textInputAction: TextInputAction.next,
-                              decoration: InputDecoration(
-                                hintText: 'Issue title',
-                                hintStyle: const TextStyle(
-                                  color: Colors.black38,
-                                  fontSize: 13,
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.title_rounded,
-                                  color: Colors.black38,
-                                  size: 20,
-                                ),
-                                border: InputBorder.none,
-                                counterText: '',
-                              ),
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const Divider(height: 18, color: Colors.black12),
-                            TextField(
                               controller: _descriptionController,
                               maxLines: 4,
                               maxLength: 500,
                               decoration: InputDecoration(
-                                hintText: 'Type the full description here...',
+                                hintText: 'Type more details about the issue...',
                                 hintStyle: const TextStyle(
                                   color: Colors.black38,
                                   fontSize: 13,
@@ -890,8 +995,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                   ),
                                 ),
                                 border: InputBorder.none,
-                                counterText:
-                                    '', // Hide default counter text to use custom label
+                                counterText: '',
                               ),
                               style: GoogleFonts.poppins(
                                 fontSize: 13,
