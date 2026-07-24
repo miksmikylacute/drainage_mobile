@@ -65,6 +65,57 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    final email = _usernameController.text.trim();
+
+    if (email.isEmpty) {
+      await showAppAlertDialog(
+        context: context,
+        title: 'Email Required',
+        message: 'Enter your email before requesting a password reset.',
+        icon: Icons.email_outlined,
+        color: const Color(0xFF2196F3),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AppService.resetPassword(email);
+      if (!mounted) return;
+      await showAppAlertDialog(
+        context: context,
+        title: 'Password Reset Sent',
+        message:
+            'If this email is registered, a password reset link will arrive shortly.',
+        icon: Icons.mark_email_read_outlined,
+        color: const Color(0xFF10B981),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await showAppAlertDialog(
+        context: context,
+        title: 'Reset Failed',
+        message: AppService.friendlyAuthError(
+          error,
+          fallback:
+              'We could not send a password reset email. Please try again.',
+        ),
+        icon: Icons.error_outline_rounded,
+        color: const Color(0xFFEF4444),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -251,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: GestureDetector(
-                                onTap: () {},
+                                onTap: _isLoading ? null : _handleForgotPassword,
                                 child: Text(
                                   'Forgot Password?',
                                   style: GoogleFonts.poppins(

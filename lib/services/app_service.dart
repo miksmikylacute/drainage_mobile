@@ -274,6 +274,14 @@ class AppService {
     _currentUser = null;
   }
 
+  static Future<void> resetPassword(String email) async {
+    if (email.trim().isEmpty) {
+      throw Exception('Email is required.');
+    }
+
+    await _client.auth.resetPasswordForEmail(email.trim());
+  }
+
   static Future<void> updateProfile({
     required String name,
     required String phone,

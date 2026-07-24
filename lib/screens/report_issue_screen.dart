@@ -529,6 +529,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
     if (_selectedImage == null ||
         !hasIssueType ||
+        _descriptionController.text.trim().isEmpty ||
         _selectedLocation == null) {
       _showFailureDialog();
       return;

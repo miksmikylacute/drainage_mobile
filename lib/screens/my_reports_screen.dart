@@ -239,21 +239,21 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
     switch (report.status) {
       case 'Pending':
-        badgeBgColor = const Color(0xFFFFF9E6);
-        badgeTextColor = const Color(0xFFFFC107);
+        badgeBgColor = const Color(0xFFFEE2E2);
+        badgeTextColor = const Color(0xFFEF4444);
         break;
       case 'Resolved':
-        badgeBgColor = const Color(0xFFE6FCF2);
-        badgeTextColor = const Color(0xFF22C55E);
+        badgeBgColor = const Color(0xFFE2FBE9);
+        badgeTextColor = const Color(0xFF10B981);
         break;
       case 'Rejected':
-        badgeBgColor = const Color(0xFFFEF2F2);
-        badgeTextColor = const Color(0xFFEF4444);
+        badgeBgColor = const Color(0xFFF3E8FF);
+        badgeTextColor = const Color(0xFF8B5CF6);
         break;
       case 'In Progress':
       default:
-        badgeBgColor = const Color(0xFFEBF5FF);
-        badgeTextColor = const Color(0xFF3B82F6);
+        badgeBgColor = const Color(0xFFDBEAFE);
+        badgeTextColor = const Color(0xFF2563EB);
         break;
     }
 
