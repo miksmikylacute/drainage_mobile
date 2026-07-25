@@ -9,6 +9,8 @@ import 'app_header.dart';
 import 'my_reports_screen.dart';
 import 'map_screen.dart';
 
+enum ReportAttachmentType { photo, video }
+
 class ReportIssueScreen extends StatefulWidget {
   const ReportIssueScreen({super.key});
 
@@ -17,8 +19,9 @@ class ReportIssueScreen extends StatefulWidget {
 }
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
-  XFile? _selectedImage;
-  Uint8List? _selectedImageBytes;
+  XFile? _selectedMedia;
+  Uint8List? _selectedPhotoBytes;
+  ReportAttachmentType? _selectedMediaType;
   String? _selectedIssueType;
   final _specifyController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -53,7 +56,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickPhoto(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(
         source: source,
@@ -65,8 +68,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         final imageBytes = await pickedFile.readAsBytes();
         if (!mounted) return;
         setState(() {
-          _selectedImage = pickedFile;
-          _selectedImageBytes = imageBytes;
+          _selectedMedia = pickedFile;
+          _selectedPhotoBytes = imageBytes;
+          _selectedMediaType = ReportAttachmentType.photo;
         });
       }
     } catch (e) {
@@ -77,7 +81,29 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     }
   }
 
-  void _showImageSourcePicker() {
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final pickedFile = await _picker.pickVideo(
+        source: source,
+        maxDuration: const Duration(minutes: 2),
+      );
+      if (pickedFile != null) {
+        if (!mounted) return;
+        setState(() {
+          _selectedMedia = pickedFile;
+          _selectedPhotoBytes = null;
+          _selectedMediaType = ReportAttachmentType.video;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error choosing video: $e')));
+    }
+  }
+
+  void _showMediaSourcePicker() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -91,7 +117,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Upload Photo',
+                'Add Photo or Video',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -99,62 +125,50 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Wrap(
+                spacing: 18,
+                runSpacing: 18,
+                alignment: WrapAlignment.center,
                 children: [
-                  GestureDetector(
+                  _buildMediaOption(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Take Photo',
+                    color: const Color(0xFF0066FF),
+                    backgroundColor: const Color(0xFFE6F4FF),
                     onTap: () {
                       Navigator.pop(context);
-                      _pickImage(ImageSource.camera);
+                      _pickPhoto(ImageSource.camera);
                     },
-                    child: Column(
-                      children: [
-                        const CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Color(0xFFE6F4FF),
-                          child: Icon(
-                            Icons.camera_alt_rounded,
-                            color: Color(0xFF0066FF),
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Camera',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                  GestureDetector(
+                  _buildMediaOption(
+                    icon: Icons.videocam_rounded,
+                    label: 'Record Video',
+                    color: const Color(0xFF8B5CF6),
+                    backgroundColor: const Color(0xFFF0E7FF),
                     onTap: () {
                       Navigator.pop(context);
-                      _pickImage(ImageSource.gallery);
+                      _pickVideo(ImageSource.camera);
                     },
-                    child: Column(
-                      children: [
-                        const CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Color(0xFFE2FBE9),
-                          child: Icon(
-                            Icons.photo_library_rounded,
-                            color: Color(0xFF10B981),
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Gallery',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                  ),
+                  _buildMediaOption(
+                    icon: Icons.photo_library_rounded,
+                    label: 'Upload Photo',
+                    color: const Color(0xFF10B981),
+                    backgroundColor: const Color(0xFFE2FBE9),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickPhoto(ImageSource.gallery);
+                    },
+                  ),
+                  _buildMediaOption(
+                    icon: Icons.video_library_rounded,
+                    label: 'Upload Video',
+                    color: const Color(0xFFEF4444),
+                    backgroundColor: const Color(0xFFFFE8E8),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickVideo(ImageSource.gallery);
+                    },
                   ),
                 ],
               ),
@@ -438,7 +452,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
-                      if (_selectedImage == null) ...[
+                      if (_selectedMedia == null) ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -455,14 +469,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: 'Photo is required.\n',
+                                      text: 'Photo or video is required.\n',
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const TextSpan(
                                       text:
-                                          'Please add a photo to your current report.',
+                                          'Please add a photo or video to your current report.',
                                     ),
                                   ],
                                 ),
@@ -523,11 +537,12 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   }
 
   Future<void> _handleSubmit() async {
-    final hasIssueType = _selectedIssueType != null &&
+    final hasIssueType =
+        _selectedIssueType != null &&
         (_selectedIssueType != 'Others' ||
             _specifyController.text.trim().isNotEmpty);
 
-    if (_selectedImage == null ||
+    if (_selectedMedia == null ||
         !hasIssueType ||
         _descriptionController.text.trim().isEmpty ||
         _selectedLocation == null) {
@@ -545,7 +560,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           : _selectedIssueType!;
 
       final report = await AppService.submitReport(
-        photo: _selectedImage!,
+        media: _selectedMedia!,
         location: _selectedLocation!,
         title: titleText,
         description: _descriptionController.text.trim(),
@@ -570,11 +585,77 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     }
   }
 
-  Widget _buildSelectedImage() {
-    final imageBytes = _selectedImageBytes;
+  Widget _buildSelectedMedia() {
+    if (_selectedMediaType == ReportAttachmentType.video) {
+      return Container(
+        color: const Color(0xFFEAF2FF),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.play_circle_fill_rounded,
+              color: Color(0xFF0066FF),
+              size: 58,
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Text(
+                _selectedMedia?.name ?? 'Selected video',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final imageBytes = _selectedPhotoBytes;
     if (imageBytes == null) return const SizedBox.shrink();
 
     return Image.memory(imageBytes, fit: BoxFit.cover, gaplessPlayback: true);
+  }
+
+  Widget _buildMediaOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color backgroundColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 92,
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: backgroundColor,
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSectionHeader(String number, String title) {
@@ -639,13 +720,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section 1: Take/Upload Photo
-                      _buildSectionHeader('1', 'Take / Upload Photo'),
+                      // Section 1: Take/Upload Media
+                      _buildSectionHeader('1', 'Take / Upload Photo or Video'),
                       const SizedBox(height: 12),
 
                       // Dashed Area (or Display Captured Image)
                       GestureDetector(
-                        onTap: _showImageSourcePicker,
+                        onTap: _showMediaSourcePicker,
                         child: Container(
                           width: double.infinity,
                           height: 180,
@@ -655,11 +736,11 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: _selectedImage != null
+                            child: _selectedMedia != null
                                 ? Stack(
                                     fit: StackFit.expand,
                                     children: [
-                                      _buildSelectedImage(),
+                                      _buildSelectedMedia(),
                                       // Retake Overlay badge
                                       Positioned(
                                         right: 12,
@@ -687,7 +768,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                'Change Photo',
+                                                'Change',
                                                 style: GoogleFonts.poppins(
                                                   color: Colors.white,
                                                   fontSize: 11,
@@ -713,7 +794,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                           alignment: Alignment.center,
                                           children: [
                                             const Icon(
-                                              Icons.camera_alt_rounded,
+                                              Icons.perm_media_rounded,
                                               size: 52,
                                               color: Colors.black,
                                             ),
@@ -746,7 +827,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                         ),
                                         const SizedBox(height: 16),
                                         Text(
-                                          'Tap to take a photo\nor upload',
+                                          'Tap to take or upload\na photo or video',
                                           textAlign: TextAlign.center,
                                           style: GoogleFonts.poppins(
                                             color: Colors.black54,
@@ -868,13 +949,17 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                       });
                                     },
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0,
+                                      ),
                                       child: Row(
                                         children: [
                                           Icon(
                                             isSelected
-                                                ? Icons.radio_button_checked_rounded
-                                                : Icons.radio_button_off_rounded,
+                                                ? Icons
+                                                      .radio_button_checked_rounded
+                                                : Icons
+                                                      .radio_button_off_rounded,
                                             color: isSelected
                                                 ? const Color(0xFF2196F3)
                                                 : Colors.black38,
@@ -900,7 +985,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                   if (type == 'Others') ...[
                                     const SizedBox(height: 4),
                                     Padding(
-                                      padding: const EdgeInsets.only(left: 34.0),
+                                      padding: const EdgeInsets.only(
+                                        left: 34.0,
+                                      ),
                                       child: TextField(
                                         controller: _specifyController,
                                         onTap: () {
@@ -916,24 +1003,31 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                                             color: Colors.black38,
                                             fontSize: 13,
                                           ),
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 10,
-                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 10,
+                                              ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             borderSide: const BorderSide(
                                               color: Colors.black12,
                                             ),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             borderSide: const BorderSide(
                                               color: Colors.black12,
                                             ),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             borderSide: const BorderSide(
                                               color: Color(0xFF2196F3),
                                             ),
@@ -956,7 +1050,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       const SizedBox(height: 24),
 
                       // Section 4: Additional Description (Optional)
-                      _buildSectionHeader('4', 'Additional Description (Optional)'),
+                      _buildSectionHeader(
+                        '4',
+                        'Additional Description (Optional)',
+                      ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -982,7 +1079,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                               maxLines: 4,
                               maxLength: 500,
                               decoration: InputDecoration(
-                                hintText: 'Type more details about the issue...',
+                                hintText:
+                                    'Type more details about the issue...',
                                 hintStyle: const TextStyle(
                                   color: Colors.black38,
                                   fontSize: 13,

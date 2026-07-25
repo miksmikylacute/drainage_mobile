@@ -357,14 +357,55 @@ class AppService {
     }
   }
 
-  static String _imageContentType(String extension) {
+  static String _reportMediaContentType(String extension) {
     switch (extension) {
       case 'png':
         return 'image/png';
       case 'webp':
         return 'image/webp';
+      case 'mp4':
+        return 'video/mp4';
+      case 'mov':
+        return 'video/quicktime';
+      case 'm4v':
+        return 'video/x-m4v';
+      case 'webm':
+        return 'video/webm';
       default:
         return 'image/jpeg';
+    }
+  }
+
+  static String _reportMediaExtension(XFile media) {
+    final extension = media.name.split('.').last.toLowerCase();
+    if ([
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'mp4',
+      'mov',
+      'm4v',
+      'webm',
+    ].contains(extension)) {
+      return extension;
+    }
+
+    switch (media.mimeType) {
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      case 'video/quicktime':
+        return 'mov';
+      case 'video/x-m4v':
+        return 'm4v';
+      case 'video/webm':
+        return 'webm';
+      case 'video/mp4':
+        return 'mp4';
+      default:
+        return 'jpg';
     }
   }
 
@@ -386,7 +427,7 @@ class AppService {
   }
 
   static Future<DrainageReport> submitReport({
-    required XFile photo,
+    required XFile media,
     required IssueLocation location,
     required String title,
     required String description,
@@ -394,7 +435,7 @@ class AppService {
     final user = _currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
-    final imageUrl = await _uploadReportPhoto(photo);
+    final mediaUrl = await _uploadReportMedia(media);
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
 
@@ -406,7 +447,7 @@ class AppService {
               ? cleanTitle.substring(0, 80)
               : cleanTitle,
           'description': cleanDescription,
-          'image_url': imageUrl,
+          'image_url': mediaUrl,
           'latitude': location.latitude,
           'longitude': location.longitude,
           'location_label': location.label,
@@ -418,17 +459,14 @@ class AppService {
     return DrainageReport.fromSupabase(reportData);
   }
 
-  static Future<String> _uploadReportPhoto(XFile photo) async {
+  static Future<String> _uploadReportMedia(XFile media) async {
     final user = _currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
-    final extension = photo.name.split('.').last.toLowerCase();
-    final safeExtension = ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
-        ? extension
-        : 'jpg';
+    final safeExtension = _reportMediaExtension(media);
     final path =
         '${user.id}/report-${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
-    final bytes = await photo.readAsBytes();
+    final bytes = await media.readAsBytes();
 
     await _client.storage
         .from('report-photos')
@@ -436,7 +474,7 @@ class AppService {
           path,
           bytes,
           fileOptions: FileOptions(
-            contentType: _imageContentType(safeExtension),
+            contentType: _reportMediaContentType(safeExtension),
           ),
         );
 

@@ -205,9 +205,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               vertical: 8.0,
             ),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF2196F3)
-                  : Colors.transparent,
+              color: isSelected ? const Color(0xFF2196F3) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -278,8 +276,10 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: report.imageUrl.isEmpty
+              child: !report.hasMedia
                   ? _buildImageFallback()
+                  : report.isVideo
+                  ? _buildVideoThumbnail()
                   : Image.network(
                       report.imageUrl,
                       width: 70,
@@ -375,6 +375,19 @@ extension _ReportImageFallback on _MyReportsScreenState {
           child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
         );
       },
+    );
+  }
+
+  Widget _buildVideoThumbnail() {
+    return Container(
+      width: 70,
+      height: 70,
+      color: const Color(0xFFEAF2FF),
+      child: const Icon(
+        Icons.play_circle_fill_rounded,
+        color: Color(0xFF0066FF),
+        size: 34,
+      ),
     );
   }
 }

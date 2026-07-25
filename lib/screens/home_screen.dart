@@ -62,8 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final residentName = AppService.residentName;
@@ -247,7 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildExpandedActionCard(
                               imagePath: 'assets/icon_report_issue.png',
                               title: 'Report Issue',
-                              subtitle: 'Report drainage problems\nin your area.',
+                              subtitle:
+                                  'Report drainage problems\nin your area.',
                               color: const Color(0xFF1E88E5), // Blue
                               bgColor: const Color(0xFFE3F2FD), // Light blue
                               onTap: () {
@@ -264,7 +263,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             _buildExpandedActionCard(
                               imagePath: 'assets/icon_my_reports.png',
                               title: 'My Reports',
-                              subtitle: 'View and track the status\nof your reports.',
+                              subtitle:
+                                  'View and track the status\nof your reports.',
                               color: const Color(0xFF22C55E), // Green
                               bgColor: const Color(0xFFDCFCE7), // Light green
                               onTap: () {
@@ -417,7 +417,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          child: report.imageUrl.isNotEmpty
+                                          child: report.isVideo
+                                              ? Container(
+                                                  width: 70,
+                                                  height: 70,
+                                                  color: const Color(
+                                                    0xFFEAF2FF,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons
+                                                        .play_circle_fill_rounded,
+                                                    color: Color(0xFF0066FF),
+                                                    size: 34,
+                                                  ),
+                                                )
+                                              : report.imageUrl.isNotEmpty
                                               ? Image.network(
                                                   report.imageUrl,
                                                   width: 70,

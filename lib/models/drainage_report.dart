@@ -43,6 +43,16 @@ class DrainageReport {
 
   String get issue => title;
 
+  bool get hasMedia => imageUrl.isNotEmpty;
+
+  bool get isVideo {
+    final normalized = imageUrl.split('?').first.toLowerCase();
+    return normalized.endsWith('.mp4') ||
+        normalized.endsWith('.mov') ||
+        normalized.endsWith('.m4v') ||
+        normalized.endsWith('.webm');
+  }
+
   String get formattedDate {
     if (createdAt == null) return 'N/A';
     return DateFormat('MMM d, yyyy  h:mm a').format(createdAt!.toLocal());

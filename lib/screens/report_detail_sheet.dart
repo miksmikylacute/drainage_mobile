@@ -127,8 +127,10 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
                     borderRadius: BorderRadius.circular(18),
                     child: InkWell(
                       onTap: () => _showImagePreview(report),
-                      child: report.imageUrl.isEmpty
+                      child: !report.hasMedia
                           ? _buildDetailImageFallback()
+                          : report.isVideo
+                          ? _buildVideoAttachmentPreview(height: 180)
                           : Image.network(
                               report.imageUrl,
                               height: 180,
@@ -245,8 +247,13 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
                   child: SizedBox(
                     width: double.infinity,
                     height: MediaQuery.of(context).size.height * 0.72,
-                    child: report.imageUrl.isEmpty
+                    child: !report.hasMedia
                         ? _buildFullImageFallback()
+                        : report.isVideo
+                        ? _buildVideoAttachmentPreview(
+                            height: MediaQuery.of(context).size.height * 0.72,
+                            dark: true,
+                          )
                         : Image.network(
                             report.imageUrl,
                             fit: BoxFit.contain,
@@ -416,6 +423,37 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
           child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
         );
       },
+    );
+  }
+
+  Widget _buildVideoAttachmentPreview({
+    required double height,
+    bool dark = false,
+  }) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: dark ? Colors.black : const Color(0xFFEAF2FF),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.play_circle_fill_rounded,
+            color: dark ? Colors.white : const Color(0xFF0066FF),
+            size: 64,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Video attachment',
+            style: GoogleFonts.poppins(
+              color: dark ? Colors.white : Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
