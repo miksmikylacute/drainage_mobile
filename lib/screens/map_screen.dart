@@ -54,54 +54,50 @@ class _MapScreenState extends State<MapScreen> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         _useFallbackLocation(
-          'Location permission is required. Drag the map to select the issue location.',
+          'Location permission denied. Drag the map to select the issue location.',
         );
         return;
       }
 
-      final lastKnownPosition = await Geolocator.getLastKnownPosition();
-      if (lastKnownPosition != null) {
-        _moveToPosition(lastKnownPosition);
-      }
-
-      final position = await Geolocator.getCurrentPosition(
+      Position? pos = await Geolocator.getLastKnownPosition();
+      pos ??= await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.bestForNavigation,
-          timeLimit: Duration(seconds: 15),
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 8),
         ),
       );
-      _moveToPosition(position);
+
+      if (!mounted) return;
+      final target = LatLng(pos.latitude, pos.longitude);
+      _currentCenter = target;
+      _mapController.move(target, 18.0);
+      _updateLocationText(target);
+      setState(() {
+        _isLocating = false;
+      });
     } catch (_) {
+      if (!mounted) return;
       _useFallbackLocation(
-        'Unable to get GPS location. Drag the map to select the issue location.',
+        'Unable to determine exact GPS. Drag the map to select your location.',
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLocating = false;
-        });
-      }
     }
   }
 
-  void _moveToPosition(Position position) {
+  void _useFallbackLocation(String warningMessage) {
     if (!mounted) return;
-
-    final nextCenter = LatLng(position.latitude, position.longitude);
+    final fallback = const LatLng(14.1894, 121.7226);
+    _currentCenter = fallback;
+    _mapController.move(fallback, 18.0);
+    _updateLocationText(fallback);
     setState(() {
-      _currentCenter = nextCenter;
-      _currentLocationText = _formatLocationText(nextCenter);
+      _isLocating = false;
     });
-    _mapController.move(nextCenter, 18.0);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(warningMessage), duration: const Duration(seconds: 4)),
+    );
   }
 
-  void _useFallbackLocation(String message) {
-    if (!mounted) return;
 
-    setState(() {
-      _currentLocationText = message;
-    });
-  }
 
   // Reverse geocoding simulator based on Mauban coordinates
   String _formatLocationText(LatLng position) {

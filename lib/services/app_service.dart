@@ -371,6 +371,10 @@ class AppService {
         return 'video/x-m4v';
       case 'webm':
         return 'video/webm';
+      case '3gp':
+        return 'video/3gpp';
+      case 'avi':
+        return 'video/avi';
       default:
         return 'image/jpeg';
     }
@@ -387,6 +391,8 @@ class AppService {
       'mov',
       'm4v',
       'webm',
+      '3gp',
+      'avi',
     ].contains(extension)) {
       return extension;
     }
@@ -404,6 +410,12 @@ class AppService {
         return 'webm';
       case 'video/mp4':
         return 'mp4';
+      case 'video/3gpp':
+      case 'video/3gpp2':
+        return '3gp';
+      case 'video/avi':
+      case 'video/x-msvideo':
+        return 'avi';
       default:
         return 'jpg';
     }
