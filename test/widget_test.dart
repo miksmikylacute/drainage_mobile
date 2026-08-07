@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:toda_go/main.dart';
-import 'package:toda_go/screens/login_screen.dart';
+import 'package:drainage/main.dart';
+import 'package:drainage/screens/login_screen.dart';
 
 void main() {
   testWidgets('Login smoke test', (WidgetTester tester) async {

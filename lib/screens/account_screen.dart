@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_service.dart';
+import 'app_header.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
+import 'login_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -15,41 +17,86 @@ class _AccountScreenState extends State<AccountScreen> {
   String get _name => AppService.residentName;
   String get _email => AppService.currentUser?.email ?? '';
   String get _phone => AppService.residentContact;
+  String get _avatarUrl => AppService.avatarUrl;
 
   void _refresh() => setState(() {});
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Logout',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          content: Text(
+            'Do you want to logout?',
+            style: GoogleFonts.poppins(color: Colors.black87, fontSize: 15),
+          ),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(
+                'Logout',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true) return;
+
+    await AppService.signOut();
+    if (!context.mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF),
+      backgroundColor: const Color(0xFF2196F3),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // ── App Bar ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.black,
-                      size: 28,
-                    ),
-                  ),
-                  Text(
-                    'My Account',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const AppHeader(title: 'My Account'),
 
             // ── White Body ───────────────────────────────────────────
             Expanded(
@@ -91,18 +138,19 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFDBEAF8),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.person_rounded,
-                                size: 40,
-                                color: Colors.black54,
-                              ),
+                            CircleAvatar(
+                              radius: 32,
+                              backgroundColor: const Color(0xFFDBEAF8),
+                              backgroundImage: _avatarUrl.isNotEmpty
+                                  ? NetworkImage(_avatarUrl)
+                                  : null,
+                              child: _avatarUrl.isEmpty
+                                  ? const Icon(
+                                      Icons.person_rounded,
+                                      size: 40,
+                                      color: Colors.black54,
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -225,6 +273,15 @@ class _AccountScreenState extends State<AccountScreen> {
                                 );
                               },
                             ),
+                            const Divider(height: 1, indent: 20, endIndent: 20),
+                            _buildActionTile(
+                              icon: Icons.logout_rounded,
+                              label: 'Logout',
+                              isDestructive: true,
+                              onTap: () {
+                                _confirmLogout(context);
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -254,7 +311,7 @@ class _AccountScreenState extends State<AccountScreen> {
             width: 44,
             height: 44,
             decoration: const BoxDecoration(
-              color: Color(0xFF38B6FF),
+              color: Color(0xFF2196F3),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: Colors.white, size: 22),
@@ -291,6 +348,7 @@ class _AccountScreenState extends State<AccountScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -302,11 +360,15 @@ class _AccountScreenState extends State<AccountScreen> {
             Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFF38B6FF),
+              decoration: BoxDecoration(
+                color: isDestructive ? const Color(0xFFFEE2E2) : const Color(0xFF2196F3),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(
+                icon, 
+                color: isDestructive ? const Color(0xFFEF4444) : Colors.white, 
+                size: 22,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -315,13 +377,13 @@ class _AccountScreenState extends State<AccountScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: isDestructive ? const Color(0xFFEF4444) : Colors.black,
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: Colors.black45,
+              color: isDestructive ? const Color(0xFFEF4444).withValues(alpha: 0.5) : Colors.black45,
               size: 26,
             ),
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_service.dart';
+import 'app_header.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -69,35 +70,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF),
+      backgroundColor: const Color(0xFF2196F3),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // ── App Bar ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.black,
-                      size: 28,
-                    ),
-                  ),
-                  Text(
-                    'Change Password',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            AppHeader(title: 'Change Password'),
 
             // ── White Body ───────────────────────────────────────────
             Expanded(
@@ -223,7 +201,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           child: ElevatedButton(
                             onPressed: _saving ? null : _saveChanges,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF38B6FF),
+                              backgroundColor: const Color(0xFF2196F3),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -258,7 +236,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF38B6FF),
+                              color: Colors.black,
                             ),
                           ),
                         ),
@@ -290,7 +268,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 13,
-            color: Colors.black54,
+            color: Colors.black,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -330,7 +308,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: Color(0xFF38B6FF),
+                color: Color(0xFF2196F3),
                 width: 1.5,
               ),
             ),

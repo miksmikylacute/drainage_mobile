@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_service.dart';
+import '../widgets/app_alert_dialog.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -50,19 +51,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             content: Text(
               'Account created successfully! Please login to continue.',
             ),
-            backgroundColor: Color(0xFF38B6FF),
+            backgroundColor: Color(0xFF2196F3),
             behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.pop(context);
       } catch (error) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString()),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+        await showAppAlertDialog(
+          context: context,
+          title: 'Registration Failed',
+          message: AppService.friendlyAuthError(
+            error,
+            fallback:
+                'We could not create your account. Please check your details and try again.',
           ),
+          icon: Icons.person_off_rounded,
+          color: const Color(0xFFEF4444),
         );
       } finally {
         if (mounted) {
@@ -169,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -216,7 +221,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -263,7 +268,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -328,7 +333,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -392,7 +397,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF38B6FF),
+                              color: Color(0xFF2196F3),
                               width: 1.5,
                             ),
                           ),
@@ -420,7 +425,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF38B6FF),
+                        backgroundColor: const Color(0xFF2196F3),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shadowColor: Colors.transparent,

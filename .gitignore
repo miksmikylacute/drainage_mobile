@@ -82,4 +82,4 @@ Desktop.ini
 /ios/Pods/
 /ios/.bundle/
 
-/lib/config/supabase_config.dart
+#/lib/config/supabase_config.dart

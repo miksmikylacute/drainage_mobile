@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_service.dart';
+import '../widgets/app_alert_dialog.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -44,12 +45,15 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } catch (error) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString()),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+        await showAppAlertDialog(
+          context: context,
+          title: 'Login Failed',
+          message: AppService.friendlyAuthError(
+            error,
+            fallback: 'We could not sign you in. Please try again.',
           ),
+          icon: Icons.error_outline_rounded,
+          color: const Color(0xFFEF4444),
         );
       } finally {
         if (mounted) {
@@ -57,6 +61,57 @@ class _LoginScreenState extends State<LoginScreen> {
             _isLoading = false;
           });
         }
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _usernameController.text.trim();
+
+    if (email.isEmpty) {
+      await showAppAlertDialog(
+        context: context,
+        title: 'Email Required',
+        message: 'Enter your email before requesting a password reset.',
+        icon: Icons.email_outlined,
+        color: const Color(0xFF2196F3),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AppService.resetPassword(email);
+      if (!mounted) return;
+      await showAppAlertDialog(
+        context: context,
+        title: 'Password Reset Sent',
+        message:
+            'If this email is registered, a password reset link will arrive shortly.',
+        icon: Icons.mark_email_read_outlined,
+        color: const Color(0xFF10B981),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await showAppAlertDialog(
+        context: context,
+        title: 'Reset Failed',
+        message: AppService.friendlyAuthError(
+          error,
+          fallback:
+              'We could not send a password reset email. Please try again.',
+        ),
+        icon: Icons.error_outline_rounded,
+        color: const Color(0xFFEF4444),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -78,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 height: size.height * 0.42,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF38B6FF),
+                  color: Color(0xFF2196F3),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(36),
                     bottomRight: Radius.circular(36),
@@ -88,17 +143,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
-                      Image.asset(
-                        'assets/drainage.png',
-                        height: 130,
-                        fit: BoxFit.contain,
+                      // Logo in white circle
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          'assets/drainage_clean.png',
+                          height: 100,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'Welcome Back!',
                         style: theme.textTheme.headlineMedium?.copyWith(
-                          color: Colors.black,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
                         ),
@@ -107,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Please login to continue',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: const Color(0xB3000000),
+                          color: Colors.white,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -162,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: Color(0xFF38B6FF),
+                                    color: Color(0xFF2196F3),
                                     width: 1.5,
                                   ),
                                 ),
@@ -221,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: Color(0xFF38B6FF),
+                                    color: Color(0xFF2196F3),
                                     width: 1.5,
                                   ),
                                 ),
@@ -236,6 +298,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return null;
                               },
                             ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: _isLoading ? null : _handleForgotPassword,
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
 
@@ -246,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF38B6FF),
+                                backgroundColor: const Color(0xFF2196F3),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shadowColor: Colors.transparent,
@@ -300,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Text(
                                     'Register here',
                                     style: GoogleFonts.poppins(
-                                      color: const Color(0xFF0066FF),
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),

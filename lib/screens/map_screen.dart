@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../models/drainage_report.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -12,48 +15,137 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
+  static const LatLng _maubanSouthWest = LatLng(14.1000, 121.6200);
+  static const LatLng _maubanNorthEast = LatLng(14.2800, 121.8200);
   LatLng _currentCenter = const LatLng(14.1894, 121.7226); // Mauban center
-  String _currentLocationText = "Loading location...";
+  String _currentLocationText = 'Finding your current location...';
   bool _isDragging = false;
-
-  // Mauban boundary limits
-  final LatLng _southWestBoundary = const LatLng(14.1000, 121.6200);
-  final LatLng _northEastBoundary = const LatLng(14.2800, 121.8200);
+  bool _isLocating = true;
 
   @override
   void initState() {
     super.initState();
-    _updateLocationText(_currentCenter);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _centerOnCurrentLocation();
+    });
   }
 
+  Future<void> _centerOnCurrentLocation() async {
+    if (!mounted) return;
+    setState(() {
+      _isLocating = true;
+      _currentLocationText = 'Finding your current location...';
+    });
+
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) {
+        _useFallbackLocation(
+          'Location service is turned off. Drag the map to select the issue location.',
+        );
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _useFallbackLocation(
+          'Location permission denied. Drag the map to select the issue location.',
+        );
+        return;
+      }
+
+      Position? pos = await Geolocator.getLastKnownPosition();
+      pos ??= await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+
+      if (!mounted) return;
+      final target = LatLng(pos.latitude, pos.longitude);
+      _currentCenter = target;
+      _mapController.move(target, 18.0);
+      _updateLocationText(target);
+      setState(() {
+        _isLocating = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      _useFallbackLocation(
+        'Unable to determine exact GPS. Drag the map to select your location.',
+      );
+    }
+  }
+
+  void _useFallbackLocation(String warningMessage) {
+    if (!mounted) return;
+    final fallback = const LatLng(14.1894, 121.7226);
+    _currentCenter = fallback;
+    _mapController.move(fallback, 18.0);
+    _updateLocationText(fallback);
+    setState(() {
+      _isLocating = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(warningMessage), duration: const Duration(seconds: 4)),
+    );
+  }
+
+
+
   // Reverse geocoding simulator based on Mauban coordinates
-  void _updateLocationText(LatLng position) {
+  String _formatLocationText(LatLng position) {
+    if (!_isWithinMaubanLabelArea(position)) {
+      return 'Selected map area, near pinned location ${_formatPinnedCoordinates(position)}';
+    }
+
     // Generate realistic Mauban address names based on coordinate grid quadrants
     String barangay;
-    String street;
+    String landmark;
 
     double lat = position.latitude;
     double lng = position.longitude;
 
     if (lat > 14.1920) {
       barangay = "Barangay Luya-luya, Mauban";
-      street = "Purok 3, Gomez Street";
+      landmark = "near Gomez Street / Purok 3";
     } else if (lat < 14.1850) {
       barangay = "Barangay Rizal, Mauban";
-      street = "Purok 2, Quezon Avenue";
+      landmark = "near Quezon Avenue / Purok 2";
     } else if (lng > 121.7280) {
       barangay = "Barangay Polo, Mauban";
-      street = "Purok 4, Coastal Road";
+      landmark = "near Coastal Road / Purok 4";
     } else if (lng < 121.7180) {
       barangay = "Barangay Bagong Silang, Mauban";
-      street = "Purok 1, San Lorenzo Street";
+      landmark = "near San Lorenzo Street / Purok 1";
     } else {
       barangay = "Poblacion, Mauban Town Center";
-      street = "Real Street, near Municipal Hall";
+      landmark = "near Real Street / Municipal Hall";
     }
 
+    return "$barangay, $landmark - pinned location ${_formatPinnedCoordinates(position)}";
+  }
+
+  String _formatPinnedCoordinates(LatLng position) {
+    return '(${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)})';
+  }
+
+  bool _isWithinMaubanLabelArea(LatLng point) {
+    return point.latitude >= _maubanSouthWest.latitude &&
+        point.latitude <= _maubanNorthEast.latitude &&
+        point.longitude >= _maubanSouthWest.longitude &&
+        point.longitude <= _maubanNorthEast.longitude;
+  }
+
+  void _updateLocationText(LatLng position) {
     setState(() {
-      _currentLocationText = "$street, $barangay";
+      _currentLocationText = _formatLocationText(position);
     });
   }
 
@@ -70,10 +162,6 @@ class _MapScreenState extends State<MapScreen> {
               initialZoom: 18.0,
               minZoom: 12.0,
               maxZoom: 22.0,
-              // Constrain map movements to Mauban area
-              cameraConstraint: CameraConstraint.contain(
-                bounds: LatLngBounds(_southWestBoundary, _northEastBoundary),
-              ),
               onPointerDown: (event, point) {
                 setState(() {
                   _isDragging = true;
@@ -186,7 +274,9 @@ class _MapScreenState extends State<MapScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Selected Location',
+                          _isLocating
+                              ? 'Current Location'
+                              : 'Selected Location',
                           style: GoogleFonts.poppins(
                             color: Colors.black54,
                             fontWeight: FontWeight.bold,
@@ -209,6 +299,28 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          Positioned(
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 104,
+            child: FloatingActionButton.small(
+              heroTag: 'center-on-current-location',
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF0066FF),
+              elevation: 4,
+              onPressed: _isLocating ? null : _centerOnCurrentLocation,
+              child: _isLocating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF0066FF),
+                      ),
+                    )
+                  : const Icon(Icons.my_location_rounded),
             ),
           ),
 
@@ -247,11 +359,17 @@ class _MapScreenState extends State<MapScreen> {
                 // Button
                 ElevatedButton(
                   onPressed: () {
-                    // Pass the simulated address back to report screen
-                    Navigator.pop(context, _currentLocationText);
+                    Navigator.pop(
+                      context,
+                      IssueLocation(
+                        label: _currentLocationText,
+                        latitude: _currentCenter.latitude,
+                        longitude: _currentCenter.longitude,
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF38B6FF),
+                    backgroundColor: const Color(0xFF2196F3),
                     foregroundColor: Colors.white,
                     elevation: 4,
                     shadowColor: Colors.black26,

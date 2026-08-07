@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'services/app_service.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config/supabase_config.dart';
+import 'screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.anonKey,
+  );
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -30,18 +34,16 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        primaryColor: const Color(0xFF38B6FF),
+        primaryColor: const Color(0xFF2196F3),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF38B6FF),
-          primary: const Color(0xFF38B6FF),
+          seedColor: const Color(0xFF2196F3),
+          primary: const Color(0xFF2196F3),
           surface: Colors.white,
         ),
         scaffoldBackgroundColor: Colors.white,
         textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme),
       ),
-      home:
-          home ??
-          (AppService.isSignedIn ? const HomeScreen() : const LoginScreen()),
+      home: home ?? const SplashScreen(),
     );
   }
 }

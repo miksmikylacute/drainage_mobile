@@ -1,22 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/drainage_report.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/app_service.dart';
 import 'account_screen.dart';
-import 'login_screen.dart';
 import 'my_reports_screen.dart';
 import 'notifications_screen.dart';
+import 'report_detail_sheet.dart';
 import 'report_issue_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<ResidentDashboardSummary> _dashboardFuture;
+  late Future<int> _unreadNotificationCountFuture;
+  RealtimeChannel? _reportsChannel;
+  RealtimeChannel? _notificationsChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _setDashboardFuture(AppService.fetchResidentDashboardSummary());
+    _reportsChannel = AppService.subscribeToMyReportChanges(_reloadDashboard);
+    _notificationsChannel = AppService.subscribeToNotificationChanges(
+      _reloadDashboard,
+    );
+  }
+
+  @override
+  void dispose() {
+    AppService.unsubscribeFromRealtime(_reportsChannel);
+    AppService.unsubscribeFromRealtime(_notificationsChannel);
+    super.dispose();
+  }
+
+  void _reloadDashboard() {
+    if (!mounted) return;
+    setState(() {
+      _setDashboardFuture(AppService.fetchResidentDashboardSummary());
+    });
+  }
+
+  Future<void> _refreshDashboard() async {
+    await AppService.refreshCurrentUser();
+    final nextDashboard = AppService.fetchResidentDashboardSummary();
+    if (!mounted) return;
+    setState(() {
+      _setDashboardFuture(nextDashboard);
+    });
+    await nextDashboard;
+  }
+
+  void _setDashboardFuture(Future<ResidentDashboardSummary> dashboardFuture) {
+    _dashboardFuture = dashboardFuture;
+    _unreadNotificationCountFuture = dashboardFuture.then(
+      (summary) => summary.unreadNotificationCount,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final residentName = AppService.residentName;
+    final avatarUrl = AppService.avatarUrl;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF38B6FF), // Blue top background
+      backgroundColor: const Color(0xFF2196F3), // Blue top background
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -31,26 +83,29 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   // Profile Avatar (tap to open Account page)
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const AccountScreen(),
                         ),
                       );
+                      if (!context.mounted) return;
+                      setState(() {});
                     },
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        size: 36,
-                        color: Colors.black,
-                      ),
+                    child: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.white,
+                      backgroundImage: avatarUrl.isNotEmpty
+                          ? NetworkImage(avatarUrl)
+                          : null,
+                      child: avatarUrl.isEmpty
+                          ? const Icon(
+                              Icons.person_rounded,
+                              size: 36,
+                              color: Colors.black,
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -62,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Hello, $residentName!',
                           style: GoogleFonts.poppins(
-                            color: Colors.black,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -71,13 +126,81 @@ class HomeScreen extends StatelessWidget {
                         Text(
                           'Welcome to Drainage Reporting System',
                           style: GoogleFonts.poppins(
-                            color: Colors.black.withValues(alpha: 0.8),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
+                  ),
+                  // Top Right Icons
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const NotificationsScreen(),
+                                ),
+                              );
+                              if (!context.mounted) return;
+                              _reloadDashboard();
+                            },
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: FutureBuilder<int>(
+                              future: _unreadNotificationCountFuture,
+                              builder: (context, snapshot) {
+                                final count = snapshot.data ?? 0;
+                                if (count <= 0) return const SizedBox.shrink();
+
+                                return Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 18,
+                                    minHeight: 18,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: const Color(0xFF2196F3),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -94,264 +217,126 @@ class HomeScreen extends StatelessWidget {
                     topRight: Radius.circular(32),
                   ),
                 ),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Quick Actions Section
-                      Text(
-                        'Quick Actions',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                child: RefreshIndicator(
+                  onRefresh: _refreshDashboard,
+                  color: const Color(0xFF2196F3),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Quick Actions Section
+                        Text(
+                          'Quick Actions',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      // Quick Actions Grid (2x2)
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 1.15,
-                        children: [
-                          _buildActionCard(
-                            icon: Icons.find_in_page_rounded,
-                            iconColor: const Color(0xFF0066FF),
-                            title: 'Report Issue',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ReportIssueScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildActionCard(
-                            icon: Icons.assignment_rounded,
-                            iconColor: const Color(0xFF10B981),
-                            title: 'My Reports',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const MyReportsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildActionCard(
-                            icon: Icons.notifications_rounded,
-                            iconColor: const Color(0xFFF59E0B),
-                            title: 'Notification',
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const NotificationsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildActionCard(
-                            icon: Icons.logout_rounded,
-                            iconColor: const Color(0xFFEF4444),
-                            title: 'Logout',
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    backgroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    title: Text(
-                                      'Logout',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    content: Text(
-                                      'Do you want to logout?',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.black87,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                    actionsPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text(
-                                          'Cancel',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.grey[600],
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          Navigator.pop(
-                                            context,
-                                          ); // Close dialog
-                                          await AppService.signOut();
-                                          if (!context.mounted) return;
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const LoginScreen(),
-                                            ),
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFFEF4444,
-                                          ),
-                                          foregroundColor: Colors.white,
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Logout',
-                                          style: GoogleFonts.poppins(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Recent Report Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Recent Report',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                        // Quick Actions Row (2 items)
+                        Row(
+                          children: [
+                            _buildExpandedActionCard(
+                              imagePath: 'assets/icon_report_issue.png',
+                              title: 'Report Issue',
+                              subtitle:
+                                  'Report drainage problems\nin your area.',
+                              color: const Color(0xFF1E88E5), // Blue
+                              bgColor: const Color(0xFFE3F2FD), // Light blue
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ReportIssueScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const MyReportsScreen(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              'View all >',
+                            const SizedBox(width: 16),
+                            _buildExpandedActionCard(
+                              imagePath: 'assets/icon_my_reports.png',
+                              title: 'My Reports',
+                              subtitle:
+                                  'View and track the status\nof your reports.',
+                              color: const Color(0xFF22C55E), // Green
+                              bgColor: const Color(0xFFDCFCE7), // Light green
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const MyReportsScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+
+                        // Recent Report Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Recent Report',
                               style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0066FF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Recent Report List
-                      FutureBuilder<List<DrainageReport>>(
-                        future: AppService.fetchMyReports(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24.0),
-                                child: CircularProgressIndicator(
-                                  color: Color(0xFF38B6FF),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const MyReportsScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'View all >',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black,
                                 ),
                               ),
-                            );
-                          }
-                          if (snapshot.hasError ||
-                              !snapshot.hasData ||
-                              snapshot.data!.isEmpty) {
-                            return Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'No recent reports found.',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.black54,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Recent Report List
+                        FutureBuilder<ResidentDashboardSummary>(
+                          future: _dashboardFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 24.0),
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF2196F3),
                                   ),
                                 ),
-                              ),
-                            );
-                          }
-
-                          final recentReports = snapshot.data!.take(3).toList();
-
-                          return Column(
-                            children: recentReports.map((report) {
-                              Color badgeBgColor;
-                              Color badgeTextColor;
-
-                              switch (report.status) {
-                                case 'Resolved':
-                                  badgeBgColor = const Color(0xFFE2FBE9);
-                                  badgeTextColor = const Color(0xFF10B981);
-                                  break;
-                                case 'Rejected':
-                                  badgeBgColor = const Color(0xFFFCE8E6);
-                                  badgeTextColor = const Color(0xFFEF4444);
-                                  break;
-                                case 'In Progress':
-                                default:
-                                  badgeBgColor = const Color(0xFFFFEAD6);
-                                  badgeTextColor = const Color(0xFFE67E22);
-                                  break;
-                              }
-
+                              );
+                            }
+                            final recentReports =
+                                snapshot.data?.recentReports ?? [];
+                            if (snapshot.hasError || recentReports.isEmpty) {
                               return Container(
-                                margin: const EdgeInsets.only(bottom: 12.0),
-                                padding: const EdgeInsets.all(12),
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(16),
@@ -365,137 +350,224 @@ class HomeScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                child: Row(
-                                  children: [
-                                    // Image
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: report.imageUrl.isNotEmpty
-                                          ? Image.network(
-                                              report.imageUrl,
-                                              width: 70,
-                                              height: 70,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                    return Image.asset(
-                                                      'assets/clogged_drain.png',
-                                                      width: 70,
-                                                      height: 70,
-                                                      fit: BoxFit.cover,
-                                                    );
-                                                  },
-                                            )
-                                          : Image.asset(
-                                              'assets/clogged_drain.png',
-                                              width: 70,
-                                              height: 70,
-                                              fit: BoxFit.cover,
-                                            ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    // Details
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            report.issue,
-                                            style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                          Text(
-                                            report.location,
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.black54,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            report.formattedDate,
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.black38,
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          // Badge for status
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 3,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: badgeBgColor,
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            child: Text(
-                                              report.status,
-                                              style: GoogleFonts.poppins(
-                                                color: badgeTextColor,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.chevron_right_rounded,
+                                child: Center(
+                                  child: Text(
+                                    'No recent reports found.',
+                                    style: GoogleFonts.poppins(
                                       color: Colors.black54,
-                                      size: 28,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
+                            }
 
-                      // Community Tip Banner
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
+                            return Column(
+                              children: recentReports.map((report) {
+                                Color badgeBgColor;
+                                Color badgeTextColor;
+
+                                switch (report.status) {
+                                  case 'Pending':
+                                    badgeBgColor = const Color(0xFFFEE2E2);
+                                    badgeTextColor = const Color(0xFFEF4444);
+                                    break;
+                                  case 'Resolved':
+                                    badgeBgColor = const Color(0xFFE2FBE9);
+                                    badgeTextColor = const Color(0xFF10B981);
+                                    break;
+                                  case 'Rejected':
+                                    badgeBgColor = const Color(0xFFF3E8FF);
+                                    badgeTextColor = const Color(0xFF8B5CF6);
+                                    break;
+                                  case 'In Progress':
+                                  default:
+                                    badgeBgColor = const Color(0xFFDBEAFE);
+                                    badgeTextColor = const Color(0xFF2563EB);
+                                    break;
+                                }
+
+                                return InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () => showReportDetailSheet(
+                                    context: context,
+                                    report: report,
+                                  ),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12.0),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.04,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        // Image
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: report.isVideo
+                                              ? Container(
+                                                  width: 70,
+                                                  height: 70,
+                                                  color: const Color(
+                                                    0xFFEAF2FF,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons
+                                                        .play_circle_fill_rounded,
+                                                    color: Color(0xFF0066FF),
+                                                    size: 34,
+                                                  ),
+                                                )
+                                              : report.imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  report.imageUrl,
+                                                  width: 70,
+                                                  height: 70,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Image.asset(
+                                                          'assets/clogged_drain.png',
+                                                          width: 70,
+                                                          height: 70,
+                                                          fit: BoxFit.cover,
+                                                        );
+                                                      },
+                                                )
+                                              : Image.asset(
+                                                  'assets/clogged_drain.png',
+                                                  width: 70,
+                                                  height: 70,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        // Details
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                report.issue,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                              Text(
+                                                report.location,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.black54,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                report.formattedDate,
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.black38,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              // Badge for status
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 3,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: badgeBgColor,
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: Text(
+                                                  report.status,
+                                                  style: GoogleFonts.poppins(
+                                                    color: badgeTextColor,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(
+                                          Icons.chevron_right_rounded,
+                                          color: Colors.black54,
+                                          size: 28,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            );
+                          },
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFD6EFFF,
-                          ), // Light blue banner background
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.campaign_rounded,
-                              color: Color(0xFF0066FF),
-                              size: 30,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Help keep out community clean by reporting drainage problems.',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.black87,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                        const SizedBox(height: 20),
+
+                        // Community Tip Banner
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFD6EFFF,
+                            ), // Light blue banner background
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.campaign_rounded,
+                                color: Color(0xFF0066FF),
+                                size: 30,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Help keep our community clean by reporting drainage problems.',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.black87,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -506,40 +578,86 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionCard({
-    required IconData icon,
-    required Color iconColor,
+  Widget _buildExpandedActionCard({
+    required String imagePath,
     required String title,
+    required String subtitle,
+    required Color color,
+    required Color bgColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: iconColor),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.black,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Image.asset(
+                    imagePath,
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.contain,
+                    color: bgColor,
+                    colorBlendMode: BlendMode.multiply,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
