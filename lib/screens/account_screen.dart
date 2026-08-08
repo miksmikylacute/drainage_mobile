@@ -166,12 +166,46 @@ class _AccountScreenState extends State<AccountScreen> {
                                       color: Colors.black,
                                     ),
                                   ),
-                                  Text(
-                                    'Resident',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 13,
-                                      color: Colors.black54,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Resident',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppService.isPending
+                                              ? const Color(0xFFFFFBEB)
+                                              : const Color(0xFFDCFCE7),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: AppService.isPending
+                                                ? const Color(0xFFFCD34D)
+                                                : const Color(0xFF86EFAC),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          AppService.isPending
+                                              ? 'Verification Pending'
+                                              : 'Verified',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppService.isPending
+                                                ? const Color(0xFFB45309)
+                                                : const Color(0xFF15803D),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

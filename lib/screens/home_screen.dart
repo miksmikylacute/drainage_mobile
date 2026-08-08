@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/app_service.dart';
+import '../widgets/app_alert_dialog.dart';
 import 'account_screen.dart';
 import 'my_reports_screen.dart';
 import 'notifications_screen.dart';
@@ -229,6 +230,57 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (AppService.isPending) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFFBEB),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFFCD34D),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.pending_actions_rounded,
+                                  color: Color(0xFFD97706),
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Verification Pending',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: const Color(0xFF92400E),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Your submitted ID is under review by Barangay Soledad admins. Reporting will be unlocked once verified.',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          color: const Color(0xFFB45309),
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         // Quick Actions Section
                         Text(
                           'Quick Actions',
@@ -248,9 +300,24 @@ class _HomeScreenState extends State<HomeScreen> {
                               title: 'Report Issue',
                               subtitle:
                                   'Report drainage problems\nin your area.',
-                              color: const Color(0xFF1E88E5), // Blue
-                              bgColor: const Color(0xFFE3F2FD), // Light blue
+                              color: AppService.isPending
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF1E88E5), // Blue or dimmed grey
+                              bgColor: AppService.isPending
+                                  ? const Color(0xFFF1F5F9)
+                                  : const Color(0xFFE3F2FD), // Light blue or light grey
                               onTap: () {
+                                if (AppService.isPending) {
+                                  showAppAlertDialog(
+                                    context: context,
+                                    title: 'Account Verification Pending',
+                                    message:
+                                        'Your account registration is still under verification process by Barangay Soledad admins. Reporting issues will be enabled once your account is verified.',
+                                    icon: Icons.hourglass_top_rounded,
+                                    color: const Color(0xFFF59E0B),
+                                  );
+                                  return;
+                                }
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
