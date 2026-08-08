@@ -61,6 +61,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             Expanded(
               child: Container(
                 width: double.infinity,
+                clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(
                   color: Color(0xFFF3F7FA),
                   borderRadius: BorderRadius.only(
@@ -237,21 +238,24 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
     switch (report.status) {
       case 'Pending':
+        badgeBgColor = const Color(0xFFFFF8E1);
+        badgeTextColor = const Color(0xFFFFC107);
+        break;
+      case 'In Progress':
+        badgeBgColor = const Color(0xFFEFF6FF);
+        badgeTextColor = const Color(0xFF3B82F6);
+        break;
+      case 'Resolved':
+        badgeBgColor = const Color(0xFFDCFCE7);
+        badgeTextColor = const Color(0xFF22C55E);
+        break;
+      case 'Rejected':
         badgeBgColor = const Color(0xFFFEE2E2);
         badgeTextColor = const Color(0xFFEF4444);
         break;
-      case 'Resolved':
-        badgeBgColor = const Color(0xFFE2FBE9);
-        badgeTextColor = const Color(0xFF10B981);
-        break;
-      case 'Rejected':
-        badgeBgColor = const Color(0xFFF3E8FF);
-        badgeTextColor = const Color(0xFF8B5CF6);
-        break;
-      case 'In Progress':
       default:
-        badgeBgColor = const Color(0xFFDBEAFE);
-        badgeTextColor = const Color(0xFF2563EB);
+        badgeBgColor = const Color(0xFFF3F4F6);
+        badgeTextColor = const Color(0xFF6B7280);
         break;
     }
 

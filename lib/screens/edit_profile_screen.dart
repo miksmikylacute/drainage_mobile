@@ -111,6 +111,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Expanded(
               child: Container(
                 width: double.infinity,
+                clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(
                   color: Color(0xFFF0F6FB),
                   borderRadius: BorderRadius.only(

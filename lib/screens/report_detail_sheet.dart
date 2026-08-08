@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/drainage_report.dart';
 import '../services/app_service.dart';
+import '../widgets/app_video_player.dart';
 
 Future<void> showReportDetailSheet({
   required BuildContext context,
@@ -65,6 +66,7 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
       maxChildSize: 0.94,
       builder: (context, scrollController) {
         return Container(
+          clipBehavior: Clip.antiAlias,
           decoration: const BoxDecoration(
             color: Color(0xFFF3F7FA),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -96,15 +98,7 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              report.displayId,
-                              style: GoogleFonts.poppins(
-                                color: Colors.black,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
+
                             Text(
                               report.issue,
                               style: GoogleFonts.poppins(
@@ -125,13 +119,17 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
                   const SizedBox(height: 14),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(18),
-                    child: InkWell(
-                      onTap: () => _showImagePreview(report),
-                      child: !report.hasMedia
-                          ? _buildDetailImageFallback()
-                          : report.isVideo
-                          ? _buildVideoAttachmentPreview(height: 180)
-                          : Image.network(
+                    child: !report.hasMedia
+                        ? _buildDetailImageFallback()
+                        : report.isVideo
+                        ? AppVideoPlayer(
+                            videoUrl: report.imageUrl,
+                            height: 220,
+                            autoPlay: false,
+                          )
+                        : InkWell(
+                            onTap: () => _showImagePreview(report),
+                            child: Image.network(
                               report.imageUrl,
                               height: 180,
                               width: double.infinity,
@@ -139,7 +137,7 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
                               errorBuilder: (context, error, stackTrace) =>
                                   _buildDetailImageFallback(),
                             ),
-                    ),
+                          ),
                   ),
                   const SizedBox(height: 16),
                   _buildDetailPanel(report),
@@ -241,26 +239,28 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(18),
-                child: InteractiveViewer(
-                  minScale: 1,
-                  maxScale: 4,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: MediaQuery.of(context).size.height * 0.72,
-                    child: !report.hasMedia
-                        ? _buildFullImageFallback()
-                        : report.isVideo
-                        ? _buildVideoAttachmentPreview(
-                            height: MediaQuery.of(context).size.height * 0.72,
-                            dark: true,
-                          )
-                        : Image.network(
+                child: SizedBox(
+                  width: double.infinity,
+                  height: MediaQuery.of(context).size.height * 0.72,
+                  child: !report.hasMedia
+                      ? _buildFullImageFallback()
+                      : report.isVideo
+                      ? AppVideoPlayer(
+                          videoUrl: report.imageUrl,
+                          height: MediaQuery.of(context).size.height * 0.72,
+                          autoPlay: true,
+                          isDark: true,
+                        )
+                      : InteractiveViewer(
+                          minScale: 1,
+                          maxScale: 4,
+                          child: Image.network(
                             report.imageUrl,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) =>
                                 _buildFullImageFallback(),
                           ),
-                  ),
+                        ),
                 ),
               ),
               Positioned(
@@ -426,37 +426,6 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
     );
   }
 
-  Widget _buildVideoAttachmentPreview({
-    required double height,
-    bool dark = false,
-  }) {
-    return Container(
-      height: height,
-      width: double.infinity,
-      color: dark ? Colors.black : const Color(0xFFEAF2FF),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.play_circle_fill_rounded,
-            color: dark ? Colors.white : const Color(0xFF0066FF),
-            size: 64,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Video attachment',
-            style: GoogleFonts.poppins(
-              color: dark ? Colors.white : Colors.black87,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFullImageFallback() {
     return Image.asset(
       'assets/clogged_drain.png',
@@ -477,13 +446,13 @@ class _ReportDetailSheetState extends State<ReportDetailSheet> {
   Color _statusColor(String status) {
     switch (status) {
       case 'Pending':
-        return const Color(0xFFEF4444);
+        return const Color(0xFFFFC107);
       case 'In Progress':
-        return const Color(0xFF2563EB);
+        return const Color(0xFF3B82F6);
       case 'Resolved':
-        return const Color(0xFF10B981);
+        return const Color(0xFF22C55E);
       case 'Rejected':
-        return const Color(0xFF8B5CF6);
+        return const Color(0xFFEF4444);
       default:
         return const Color(0xFF64748B);
     }
