@@ -150,8 +150,17 @@ class AppService {
       return 'This account is not allowed to use this app.';
     }
 
-    if (message.contains('disabled')) {
-      return 'This account is disabled. Please contact the administrator.';
+    if (message.contains('disabled') ||
+        message.contains('banned') ||
+        message.contains('user_banned') ||
+        message.contains('user is banned') ||
+        message.contains('user is disabled') ||
+        message.contains('account is disabled')) {
+      return 'Disabled User. Please Contact Administrator';
+    }
+
+    if (message.contains('under review') || message.contains('id is verified')) {
+      return 'Your account registration is under review by Barangay Soledad admins. You will receive full access once your ID is verified.';
     }
 
     if (message.contains('unable to load') ||
@@ -167,6 +176,19 @@ class AppService {
 
     if (message.contains('invalid email')) {
       return 'Please enter a valid email address.';
+    }
+
+    if (message.contains('bucket not found') || message.contains('storage')) {
+      return 'Storage setup required: The resident-ids bucket is missing in Supabase. Please execute migration 0011_resident_id_verification.sql in your Supabase SQL editor.';
+    }
+
+    if (message.contains('row-level security') || message.contains('policy')) {
+      return 'Database policy update required: Please execute migration 0011_resident_id_verification.sql in your Supabase SQL editor.';
+    }
+
+    final rawErr = error.toString().replaceFirst('Exception: ', '').trim();
+    if (rawErr.isNotEmpty) {
+      return '$fallback\n\nDetails: $rawErr';
     }
 
     return fallback;
@@ -205,10 +227,10 @@ class AppService {
       throw Exception('Admin accounts cannot use the mobile reporting app.');
     }
 
-    if (status != 'Active') {
+    if (status != 'Active' && status != 'Pending') {
       await _client.auth.signOut();
       _currentUser = null;
-      throw Exception('This resident account is disabled.');
+      throw Exception('This resident account is disabled. Please contact the administrator.');
     }
 
     _currentUser = AppUser(
@@ -224,6 +246,16 @@ class AppService {
         'status': status,
       },
     );
+  }
+
+  static bool get isPending {
+    final status = currentUser?.userMetadata['status'];
+    return status == 'Pending';
+  }
+
+  static bool get isVerified {
+    final status = currentUser?.userMetadata['status'];
+    return status == 'Active';
   }
 
   static Future<void> signIn({
@@ -252,6 +284,7 @@ class AppService {
     required String contactNo,
     required String email,
     required String password,
+    required XFile idCardMedia,
   }) async {
     final response = await _client.auth.signUp(
       email: email.trim(),
@@ -260,13 +293,67 @@ class AppService {
         'role': 'resident',
         'fullname': name.trim(),
         'phone': contactNo.trim(),
+        'status': 'Pending',
       },
     );
 
     final user = response.user;
-    if (user != null && response.session != null) {
-      await _loadResidentProfile(user.id);
+    if (user == null) {
+      throw Exception('Unable to create account.');
     }
+
+    if (_client.auth.currentSession == null) {
+      try {
+        await _client.auth.signInWithPassword(
+          email: email.trim(),
+          password: password,
+        );
+      } catch (_) {}
+    }
+
+    final fileExtension = idCardMedia.name.split('.').last.toLowerCase();
+    final ext = fileExtension.isEmpty ? 'jpg' : fileExtension;
+    final path = '${user.id}/id_card_${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final bytes = await idCardMedia.readAsBytes();
+
+    final mimeType = ext == 'png'
+        ? 'image/png'
+        : ext == 'webp'
+            ? 'image/webp'
+            : 'image/jpeg';
+
+    String publicUrl = '';
+    try {
+      await _client.storage.from('resident-ids').uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(upsert: true, contentType: mimeType),
+      );
+      publicUrl = _client.storage.from('resident-ids').getPublicUrl(path);
+    } catch (storageError) {
+      throw Exception(
+        'ID Photo Upload Failed: Storage bucket "resident-ids" does not exist or permission denied. Please run migration 0011_resident_id_verification.sql in your Supabase SQL Editor. ($storageError)',
+      );
+    }
+
+    try {
+      await _client.from('users').upsert({
+        'id': user.id,
+        'email': email.trim(),
+        'fullname': name.trim(),
+        'phone': contactNo.trim(),
+        'id_card_url': publicUrl,
+        'role': 'resident',
+        'status': 'Pending',
+      });
+    } catch (dbError) {
+      throw Exception(
+        'Database update failed: Please run migration 0011_resident_id_verification.sql in your Supabase SQL Editor. ($dbError)',
+      );
+    }
+
+    await _client.auth.signOut();
+    _currentUser = null;
   }
 
   static Future<void> signOut() async {
