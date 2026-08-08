@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/drainage_report.dart';
 import '../services/app_service.dart';
+import '../widgets/app_video_player.dart';
 import 'app_header.dart';
 import 'my_reports_screen.dart';
 import 'map_screen.dart';
@@ -112,7 +113,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       ),
       builder: (context) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -125,50 +126,55 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 18,
-                runSpacing: 18,
-                alignment: WrapAlignment.center,
+              Row(
                 children: [
-                  _buildMediaOption(
-                    icon: Icons.camera_alt_rounded,
-                    label: 'Take Photo',
-                    color: const Color(0xFF0066FF),
-                    backgroundColor: const Color(0xFFE6F4FF),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickPhoto(ImageSource.camera);
-                    },
+                  Expanded(
+                    child: _buildMediaOption(
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Take Photo',
+                      color: const Color(0xFF2196F3),
+                      backgroundColor: const Color(0xFFEAF4FF),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickPhoto(ImageSource.camera);
+                      },
+                    ),
                   ),
-                  _buildMediaOption(
-                    icon: Icons.videocam_rounded,
-                    label: 'Record Video',
-                    color: const Color(0xFF8B5CF6),
-                    backgroundColor: const Color(0xFFF0E7FF),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickVideo(ImageSource.camera);
-                    },
+                  Expanded(
+                    child: _buildMediaOption(
+                      icon: Icons.videocam_rounded,
+                      label: 'Record Video',
+                      color: const Color(0xFF8B5CF6),
+                      backgroundColor: const Color(0xFFF0E7FF),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickVideo(ImageSource.camera);
+                      },
+                    ),
                   ),
-                  _buildMediaOption(
-                    icon: Icons.photo_library_rounded,
-                    label: 'Upload Photo',
-                    color: const Color(0xFF10B981),
-                    backgroundColor: const Color(0xFFE2FBE9),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickPhoto(ImageSource.gallery);
-                    },
+                  Expanded(
+                    child: _buildMediaOption(
+                      icon: Icons.photo_library_rounded,
+                      label: 'Upload Photo',
+                      color: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFFE2FBE9),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickPhoto(ImageSource.gallery);
+                      },
+                    ),
                   ),
-                  _buildMediaOption(
-                    icon: Icons.video_library_rounded,
-                    label: 'Upload Video',
-                    color: const Color(0xFFEF4444),
-                    backgroundColor: const Color(0xFFFFE8E8),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickVideo(ImageSource.gallery);
-                    },
+                  Expanded(
+                    child: _buildMediaOption(
+                      icon: Icons.video_library_rounded,
+                      label: 'Upload Video',
+                      color: const Color(0xFFEF4444),
+                      backgroundColor: const Color(0xFFFFE8E8),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickVideo(ImageSource.gallery);
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -587,6 +593,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   Widget _buildSelectedMedia() {
     if (_selectedMediaType == ReportAttachmentType.video) {
+      final mediaPath = _selectedMedia?.path;
+      if (mediaPath != null && mediaPath.isNotEmpty) {
+        return AppVideoPlayer(
+          videoPath: mediaPath,
+          height: double.infinity,
+          autoPlay: false,
+        );
+      }
       return Container(
         color: const Color(0xFFEAF2FF),
         alignment: Alignment.center,
@@ -595,7 +609,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           children: [
             const Icon(
               Icons.play_circle_fill_rounded,
-              color: Color(0xFF0066FF),
+              color: Color(0xFF2196F3),
               size: 58,
             ),
             const SizedBox(height: 8),
@@ -631,25 +645,31 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     required Color backgroundColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: SizedBox(
-        width: 92,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 2.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             CircleAvatar(
-              radius: 28,
+              radius: 26,
               backgroundColor: backgroundColor,
-              child: Icon(icon, color: color, size: 28),
+              child: Icon(icon, color: color, size: 26),
             ),
             const SizedBox(height: 8),
-            Text(
-              label,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ],
@@ -707,6 +727,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             Expanded(
               child: Container(
                 width: double.infinity,
+                clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(
                   color: Color(0xFFF3F7FA), // Soft light background
                   borderRadius: BorderRadius.only(
@@ -1049,10 +1070,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Section 4: Additional Description (Optional)
+                      // Section 4: Additional Description
                       _buildSectionHeader(
                         '4',
-                        'Additional Description (Optional)',
+                        'Additional Description',
                       ),
                       const SizedBox(height: 12),
                       Container(

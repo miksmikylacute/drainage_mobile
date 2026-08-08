@@ -122,23 +122,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF2196F3),
       body: SingleChildScrollView(
         child: SizedBox(
           height: size.height,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Blue Top Banner (Approx 42% height)
+              // Blue Top Banner (Approx 40% height)
               Container(
-                height: size.height * 0.42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2196F3),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(36),
-                    bottomRight: Radius.circular(36),
-                  ),
-                ),
+                height: size.height * 0.40,
+                color: const Color(0xFF2196F3),
                 child: SafeArea(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -178,16 +172,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              // Bottom Input Form
+              // Bottom Input Form Container curving upwards
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32.0,
-                    vertical: 24.0,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(36),
+                      topRight: Radius.circular(36),
+                    ),
                   ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32.0,
+                      vertical: 24.0,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -392,10 +394,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

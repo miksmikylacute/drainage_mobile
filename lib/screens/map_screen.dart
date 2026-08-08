@@ -15,9 +15,12 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
-  static const LatLng _maubanSouthWest = LatLng(14.1000, 121.6200);
-  static const LatLng _maubanNorthEast = LatLng(14.2800, 121.8200);
-  LatLng _currentCenter = const LatLng(14.1894, 121.7226); // Mauban center
+
+  static const LatLng _soledadCenter = LatLng(14.2050, 121.7250);
+  static const LatLng _soledadSouthWest = LatLng(14.1700, 121.6950);
+  static const LatLng _soledadNorthEast = LatLng(14.2350, 121.7550);
+
+  LatLng _currentCenter = _soledadCenter;
   String _currentLocationText = 'Finding your current location...';
   bool _isDragging = false;
   bool _isLocating = true;
@@ -30,6 +33,13 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
+  bool _isWithinSoledad(LatLng point) {
+    return point.latitude >= _soledadSouthWest.latitude &&
+        point.latitude <= _soledadNorthEast.latitude &&
+        point.longitude >= _soledadSouthWest.longitude &&
+        point.longitude <= _soledadNorthEast.longitude;
+  }
+
   Future<void> _centerOnCurrentLocation() async {
     if (!mounted) return;
     setState(() {
@@ -40,9 +50,7 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
       if (!enabled) {
-        _useFallbackLocation(
-          'Location service is turned off. Drag the map to select the issue location.',
-        );
+        _handleOutsideOrDisabledGps();
         return;
       }
 
@@ -53,9 +61,7 @@ class _MapScreenState extends State<MapScreen> {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        _useFallbackLocation(
-          'Location permission denied. Drag the map to select the issue location.',
-        );
+        _handleOutsideOrDisabledGps();
         return;
       }
 
@@ -67,80 +73,167 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
 
-      if (!mounted) return;
       final target = LatLng(pos.latitude, pos.longitude);
-      _currentCenter = target;
-      _mapController.move(target, 18.0);
-      _updateLocationText(target);
-      setState(() {
-        _isLocating = false;
-      });
+      if (_isWithinSoledad(target)) {
+        _currentCenter = target;
+        _mapController.move(target, 15.0);
+        _updateLocationText(target);
+        setState(() {
+          _isLocating = false;
+        });
+        return;
+      }
+
+      _handleOutsideOrDisabledGps();
     } catch (_) {
       if (!mounted) return;
-      _useFallbackLocation(
-        'Unable to determine exact GPS. Drag the map to select your location.',
-      );
+      _handleOutsideOrDisabledGps();
     }
   }
 
-  void _useFallbackLocation(String warningMessage) {
+  void _handleOutsideOrDisabledGps() {
     if (!mounted) return;
-    final fallback = const LatLng(14.1894, 121.7226);
-    _currentCenter = fallback;
-    _mapController.move(fallback, 18.0);
-    _updateLocationText(fallback);
+    _currentCenter = _soledadCenter;
+    _mapController.move(_soledadCenter, 15.0);
+    _updateLocationText(_soledadCenter);
     setState(() {
       _isLocating = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(warningMessage), duration: const Duration(seconds: 4)),
+    _showOutsideSoledadDialog();
+  }
+
+  Future<void> _showOutsideSoledadDialog() async {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircleAvatar(
+                  radius: 36,
+                  backgroundColor: Color(0xFFFFF3DC),
+                  child: Icon(
+                    Icons.wrong_location_rounded,
+                    color: Color(0xFFF59E0B),
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Outside Barangay Soledad',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'you are not in the baranggay soledad area in Mauban Quezon',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Option 1: Manually pin point an issue in the map
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2196F3),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Manually pin point an issue in the map',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Option 2: Exit
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black.withValues(alpha: 0.7),
+                      side: const BorderSide(color: Colors.black26),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Exit',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-
-
-  // Reverse geocoding simulator based on Mauban coordinates
   String _formatLocationText(LatLng position) {
-    if (!_isWithinMaubanLabelArea(position)) {
-      return 'Selected map area, near pinned location ${_formatPinnedCoordinates(position)}';
-    }
-
-    // Generate realistic Mauban address names based on coordinate grid quadrants
-    String barangay;
-    String landmark;
-
     double lat = position.latitude;
     double lng = position.longitude;
 
-    if (lat > 14.1920) {
-      barangay = "Barangay Luya-luya, Mauban";
-      landmark = "near Gomez Street / Purok 3";
+    String landmark;
+    if (lat > 14.2150) {
+      landmark = "near Mountain & Rural Area / Inland Channel";
+    } else if (lat > 14.2000) {
+      landmark = "near Upper Soledad / Gomez Street & Foothills";
     } else if (lat < 14.1850) {
-      barangay = "Barangay Rizal, Mauban";
-      landmark = "near Quezon Avenue / Purok 2";
-    } else if (lng > 121.7280) {
-      barangay = "Barangay Polo, Mauban";
-      landmark = "near Coastal Road / Purok 4";
-    } else if (lng < 121.7180) {
-      barangay = "Barangay Bagong Silang, Mauban";
-      landmark = "near San Lorenzo Street / Purok 1";
+      landmark = "near South Soledad / Quezon Avenue";
+    } else if (lng > 121.7380) {
+      landmark = "near Coastal Edge / East Drainage Line";
+    } else if (lng < 121.7100) {
+      landmark = "near West Mountain Stream / Inland Purok";
     } else {
-      barangay = "Poblacion, Mauban Town Center";
-      landmark = "near Real Street / Municipal Hall";
+      landmark = "near Barangay Hall & Main Drainage Channel";
     }
 
-    return "$barangay, $landmark - pinned location ${_formatPinnedCoordinates(position)}";
+    return "Barangay Soledad, Mauban, Quezon - $landmark - pinned location ${_formatPinnedCoordinates(position)}";
   }
 
   String _formatPinnedCoordinates(LatLng position) {
     return '(${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)})';
-  }
-
-  bool _isWithinMaubanLabelArea(LatLng point) {
-    return point.latitude >= _maubanSouthWest.latitude &&
-        point.latitude <= _maubanNorthEast.latitude &&
-        point.longitude >= _maubanSouthWest.longitude &&
-        point.longitude <= _maubanNorthEast.longitude;
   }
 
   void _updateLocationText(LatLng position) {
@@ -149,19 +242,34 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
+  LatLng _clampToSoledad(LatLng point) {
+    final clampedLat = point.latitude.clamp(
+      _soledadSouthWest.latitude,
+      _soledadNorthEast.latitude,
+    );
+    final clampedLng = point.longitude.clamp(
+      _soledadSouthWest.longitude,
+      _soledadNorthEast.longitude,
+    );
+    return LatLng(clampedLat, clampedLng);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Flutter Map Widget
+          // Flutter Map Widget focused on Barangay Soledad
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _currentCenter,
-              initialZoom: 18.0,
-              minZoom: 12.0,
-              maxZoom: 22.0,
+              initialZoom: 15.0,
+              minZoom: 13.0,
+              maxZoom: 19.0,
+              cameraConstraint: CameraConstraint.contain(
+                bounds: LatLngBounds(_soledadSouthWest, _soledadNorthEast),
+              ),
               onPointerDown: (event, point) {
                 setState(() {
                   _isDragging = true;
@@ -174,7 +282,8 @@ class _MapScreenState extends State<MapScreen> {
               },
               onPositionChanged: (position, hasGesture) {
                 if (position.center != null) {
-                  _currentCenter = position.center!;
+                  final clamped = _clampToSoledad(position.center!);
+                  _currentCenter = clamped;
                   _updateLocationText(_currentCenter);
                 }
               },
@@ -183,17 +292,15 @@ class _MapScreenState extends State<MapScreen> {
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.drainage.user',
-                maxZoom: 22.0,
+                maxZoom: 19.0,
               ),
             ],
           ),
 
-          // Central Pin Pointer Overlay (hovering crosshair effect)
+          // Central Pin Pointer Overlay
           Center(
             child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 24.0,
-              ), // offset pin center to tip
+              padding: const EdgeInsets.only(bottom: 24.0),
               child: AnimatedScale(
                 scale: _isDragging ? 1.2 : 1.0,
                 duration: const Duration(milliseconds: 150),
@@ -302,6 +409,7 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
+          // Recenter Button
           Positioned(
             right: 16,
             bottom: MediaQuery.of(context).padding.bottom + 104,
@@ -345,7 +453,7 @@ class _MapScreenState extends State<MapScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Drag map to select drainage location',
+                      'Drag map to select drainage location in Brgy. Soledad',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 11,
@@ -356,7 +464,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Button
+                // Confirm Button
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(
