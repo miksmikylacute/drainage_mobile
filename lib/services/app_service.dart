@@ -54,6 +54,35 @@ class AppNotification {
   }
 }
 
+class Hotline {
+  final String id;
+  final String name;
+  final String phoneNumber;
+  final String description;
+  final String category;
+  final bool isActive;
+
+  const Hotline({
+    required this.id,
+    required this.name,
+    required this.phoneNumber,
+    required this.description,
+    required this.category,
+    required this.isActive,
+  });
+
+  factory Hotline.fromSupabase(Map<String, dynamic> data) {
+    return Hotline(
+      id: '${data['id']}',
+      name: '${data['name'] ?? 'Hotline'}',
+      phoneNumber: '${data['phone_number'] ?? ''}',
+      description: '${data['description'] ?? ''}',
+      category: '${data['category'] ?? ''}',
+      isActive: data['is_active'] != false,
+    );
+  }
+}
+
 class ResidentDashboardSummary {
   final List<DrainageReport> recentReports;
   final List<AppNotification> latestNotifications;
@@ -179,11 +208,11 @@ class AppService {
     }
 
     if (message.contains('bucket not found') || message.contains('storage')) {
-      return 'Storage setup required: The resident-ids bucket is missing in Supabase. Please execute migration 0011_resident_id_verification.sql in your Supabase SQL editor.';
+      return 'Storage setup required: The resident-ids bucket is missing in Supabase. Please execute migrations 0011 and 0012 in your Supabase SQL editor.';
     }
 
     if (message.contains('row-level security') || message.contains('policy')) {
-      return 'Database policy update required: Please execute migration 0011_resident_id_verification.sql in your Supabase SQL editor.';
+      return 'Database policy update required: Please execute migrations 0011 and 0012 in your Supabase SQL editor.';
     }
 
     final rawErr = error.toString().replaceFirst('Exception: ', '').trim();
@@ -284,7 +313,8 @@ class AppService {
     required String contactNo,
     required String email,
     required String password,
-    required XFile idCardMedia,
+    required XFile idCardFrontMedia,
+    required XFile idCardBackMedia,
   }) async {
     final response = await _client.auth.signUp(
       email: email.trim(),
@@ -311,28 +341,14 @@ class AppService {
       } catch (_) {}
     }
 
-    final fileExtension = idCardMedia.name.split('.').last.toLowerCase();
-    final ext = fileExtension.isEmpty ? 'jpg' : fileExtension;
-    final path = '${user.id}/id_card_${DateTime.now().millisecondsSinceEpoch}.$ext';
-    final bytes = await idCardMedia.readAsBytes();
-
-    final mimeType = ext == 'png'
-        ? 'image/png'
-        : ext == 'webp'
-            ? 'image/webp'
-            : 'image/jpeg';
-
-    String publicUrl = '';
+    String frontUrl = '';
+    String backUrl = '';
     try {
-      await _client.storage.from('resident-ids').uploadBinary(
-        path,
-        bytes,
-        fileOptions: FileOptions(upsert: true, contentType: mimeType),
-      );
-      publicUrl = _client.storage.from('resident-ids').getPublicUrl(path);
+      frontUrl = await _uploadResidentIdMedia(idCardFrontMedia, 'front');
+      backUrl = await _uploadResidentIdMedia(idCardBackMedia, 'back');
     } catch (storageError) {
       throw Exception(
-        'ID Photo Upload Failed: Storage bucket "resident-ids" does not exist or permission denied. Please run migration 0011_resident_id_verification.sql in your Supabase SQL Editor. ($storageError)',
+        'ID Photo Upload Failed: Storage bucket "resident-ids" does not exist or permission denied. Please run migrations 0011 and 0012 in your Supabase SQL Editor. ($storageError)',
       );
     }
 
@@ -342,18 +358,47 @@ class AppService {
         'email': email.trim(),
         'fullname': name.trim(),
         'phone': contactNo.trim(),
-        'id_card_url': publicUrl,
+        'id_card_url': frontUrl,
+        'id_card_front_url': frontUrl,
+        'id_card_back_url': backUrl,
         'role': 'resident',
         'status': 'Pending',
       });
     } catch (dbError) {
       throw Exception(
-        'Database update failed: Please run migration 0011_resident_id_verification.sql in your Supabase SQL Editor. ($dbError)',
+        'Database update failed: Please run migrations 0011 and 0012 in your Supabase SQL Editor. ($dbError)',
       );
     }
 
     await _client.auth.signOut();
     _currentUser = null;
+  }
+
+  static Future<String> _uploadResidentIdMedia(XFile media, String side) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    final rawExtension = media.name.split('.').last.toLowerCase();
+    final extension = ['jpg', 'jpeg', 'png', 'webp'].contains(rawExtension)
+        ? rawExtension
+        : 'jpg';
+    final path =
+        '${user.id}/${side}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final bytes = await media.readAsBytes();
+
+    final mimeType = extension == 'png'
+        ? 'image/png'
+        : extension == 'webp'
+            ? 'image/webp'
+            : 'image/jpeg';
+
+    await _client.storage.from('resident-ids').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(upsert: true, contentType: mimeType),
+        );
+
+    return _client.storage.from('resident-ids').getPublicUrl(path);
   }
 
   static Future<void> signOut() async {
@@ -708,6 +753,22 @@ class AppService {
     return (rows as List<dynamic>).length;
   }
 
+  static Future<List<Hotline>> fetchHotlines() async {
+    final user = _currentUser;
+    if (user == null) return [];
+
+    final rows = await _client
+        .from('hotlines')
+        .select('id,name,phone_number,description,category,is_active,sort_order')
+        .eq('is_active', true)
+        .order('sort_order', ascending: true)
+        .order('name', ascending: true);
+
+    return (rows as List<dynamic>)
+        .map((row) => Hotline.fromSupabase(row as Map<String, dynamic>))
+        .toList();
+  }
+
   static RealtimeChannel? subscribeToNotificationChanges(
     void Function() onChange,
   ) {
@@ -766,6 +827,23 @@ class AppService {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'report_logs',
+          callback: (_) => onChange(),
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  static RealtimeChannel? subscribeToHotlineChanges(void Function() onChange) {
+    final user = _currentUser;
+    if (user == null) return null;
+
+    final channel = _client
+        .channel('resident-hotlines-${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'hotlines',
           callback: (_) => onChange(),
         )
         .subscribe();

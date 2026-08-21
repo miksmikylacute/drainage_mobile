@@ -8,6 +8,7 @@ import 'my_reports_screen.dart';
 import 'notifications_screen.dart';
 import 'report_detail_sheet.dart';
 import 'report_issue_screen.dart';
+import 'hotline_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -346,6 +347,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildWideActionCard(
+                          imagePath: 'assets/icon_notifications.png',
+                          title: 'Hotlines',
+                          subtitle:
+                              'View emergency and barangay contact numbers.',
+                          color: const Color(0xFFF59E0B),
+                          bgColor: const Color(0xFFFFF7ED),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HotlineScreen(),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 28),
 
@@ -729,6 +747,100 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWideActionCard({
+    required String imagePath,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: bgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Image.asset(
+                  imagePath,
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.contain,
+                  color: bgColor,
+                  colorBlendMode: BlendMode.multiply,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: Colors.black54,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                color: color,
+                size: 22,
+              ),
+            ),
+          ],
         ),
       ),
     );

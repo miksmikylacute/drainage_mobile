@@ -24,8 +24,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  XFile? _selectedIdCardMedia;
-  Uint8List? _selectedIdCardBytes;
+  XFile? _selectedIdCardFrontMedia;
+  Uint8List? _selectedIdCardFrontBytes;
+  XFile? _selectedIdCardBackMedia;
+  Uint8List? _selectedIdCardBackBytes;
 
   @override
   void dispose() {
@@ -37,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _pickIdCardImage(ImageSource source) async {
+  Future<void> _pickIdCardImage(ImageSource source, {required bool isFront}) async {
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
@@ -48,8 +50,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _selectedIdCardMedia = pickedFile;
-          _selectedIdCardBytes = bytes;
+          if (isFront) {
+            _selectedIdCardFrontMedia = pickedFile;
+            _selectedIdCardFrontBytes = bytes;
+          } else {
+            _selectedIdCardBackMedia = pickedFile;
+            _selectedIdCardBackBytes = bytes;
+          }
         });
       }
     } catch (_) {
@@ -66,12 +73,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
-      if (_selectedIdCardMedia == null) {
+      if (_selectedIdCardFrontMedia == null || _selectedIdCardBackMedia == null) {
         await showAppAlertDialog(
           context: context,
-          title: 'Valid ID Photo Required',
+          title: 'Valid ID Photos Required',
           message:
-              'Please capture or upload a clear photo of your valid ID (Barangay ID, Government ID, Student/Senior ID) to complete registration.',
+              'Please capture or upload clear front and back photos of your valid ID to complete registration.',
           icon: Icons.badge_rounded,
           color: const Color(0xFFEF4444),
         );
@@ -88,7 +95,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           contactNo: _contactController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          idCardMedia: _selectedIdCardMedia!,
+          idCardFrontMedia: _selectedIdCardFrontMedia!,
+          idCardBackMedia: _selectedIdCardBackMedia!,
         );
 
         if (!mounted) return;
@@ -97,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           context: context,
           title: 'Registration Submitted',
           message:
-              'Your registration and valid ID have been submitted to Barangay Soledad admins for verification. You will be able to log in once your account is verified.',
+              'Your registration and valid ID photos have been submitted to Barangay Soledad admins for verification. You can log in to check your dashboard, and reporting will unlock once your account is verified.',
           icon: Icons.verified_user_rounded,
           color: const Color(0xFF22C55E),
         );
@@ -125,6 +133,113 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
     }
+  }
+
+  Widget _buildIdPickerCard({
+    required String title,
+    required Uint8List? bytes,
+    required VoidCallback onCamera,
+    required VoidCallback onGallery,
+    required VoidCallback onClear,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: bytes != null ? const Color(0xFF2196F3) : const Color(0xFFCCCCCC),
+          width: 1.4,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (bytes != null)
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    bytes,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: onClear,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.64),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onCamera,
+                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                    label: Text(
+                      'Camera',
+                      style: GoogleFonts.poppins(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2196F3),
+                      side: const BorderSide(color: Color(0xFF2196F3)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onGallery,
+                    icon: const Icon(Icons.photo_library_outlined, size: 18),
+                    label: Text(
+                      'Gallery',
+                      style: GoogleFonts.poppins(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2196F3),
+                      side: const BorderSide(color: Color(0xFF2196F3)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -459,14 +574,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Valid ID Attachment Card
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF7F7F7),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: _selectedIdCardMedia != null
+                            color: _selectedIdCardFrontMedia != null &&
+                                    _selectedIdCardBackMedia != null
                                 ? const Color(0xFF2196F3)
                                 : const Color(0xFFCCCCCC),
                             width: 1.5,
@@ -483,7 +598,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Upload Valid ID (Required)',
+                                  'Upload Valid ID Photos (Required)',
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
@@ -494,103 +609,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Barangay ID, Government ID, Student/Senior ID',
+                              'Capture or upload the front and back of your ID.',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: Colors.black54,
                               ),
                             ),
                             const SizedBox(height: 14),
-                            if (_selectedIdCardBytes != null)
-                              Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.memory(
-                                      _selectedIdCardBytes!,
-                                      height: 160,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedIdCardMedia = null;
-                                          _selectedIdCardBytes = null;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.64),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _pickIdCardImage(ImageSource.camera),
-                                      icon: const Icon(
-                                        Icons.camera_alt_outlined,
-                                        size: 18,
-                                      ),
-                                      label: Text(
-                                        'Camera',
-                                        style: GoogleFonts.poppins(fontSize: 13),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFF2196F3),
-                                        side: const BorderSide(
-                                          color: Color(0xFF2196F3),
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _pickIdCardImage(ImageSource.gallery),
-                                      icon: const Icon(
-                                        Icons.photo_library_outlined,
-                                        size: 18,
-                                      ),
-                                      label: Text(
-                                        'Gallery',
-                                        style: GoogleFonts.poppins(fontSize: 13),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFF2196F3),
-                                        side: const BorderSide(
-                                          color: Color(0xFF2196F3),
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            _buildIdPickerCard(
+                              title: 'Front of ID',
+                              bytes: _selectedIdCardFrontBytes,
+                              onCamera: () => _pickIdCardImage(
+                                ImageSource.camera,
+                                isFront: true,
                               ),
+                              onGallery: () => _pickIdCardImage(
+                                ImageSource.gallery,
+                                isFront: true,
+                              ),
+                              onClear: () {
+                                setState(() {
+                                  _selectedIdCardFrontMedia = null;
+                                  _selectedIdCardFrontBytes = null;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            _buildIdPickerCard(
+                              title: 'Back of ID',
+                              bytes: _selectedIdCardBackBytes,
+                              onCamera: () => _pickIdCardImage(
+                                ImageSource.camera,
+                                isFront: false,
+                              ),
+                              onGallery: () => _pickIdCardImage(
+                                ImageSource.gallery,
+                                isFront: false,
+                              ),
+                              onClear: () {
+                                setState(() {
+                                  _selectedIdCardBackMedia = null;
+                                  _selectedIdCardBackBytes = null;
+                                });
+                              },
+                            ),
                           ],
                         ),
                       ),
