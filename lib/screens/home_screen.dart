@@ -8,7 +8,7 @@ import 'my_reports_screen.dart';
 import 'notifications_screen.dart';
 import 'report_detail_sheet.dart';
 import 'report_issue_screen.dart';
-import 'hotline_screen.dart';
+// import 'hotline_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -348,6 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
+                        /*
                         const SizedBox(height: 16),
                         _buildWideActionCard(
                           imagePath: 'assets/icon_notifications.png',
@@ -365,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                         ),
+                        */
                         const SizedBox(height: 28),
 
                         // Recent Report Header
@@ -752,6 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildWideActionCard({
     required String imagePath,
     required String title,
