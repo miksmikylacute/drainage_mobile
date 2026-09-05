@@ -20,13 +20,16 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 3));
+    final waitFuture = Future.delayed(const Duration(milliseconds: 600));
+    final sessionFuture = () async {
+      try {
+        await AppService.initializeSession();
+      } catch (_) {
+        await AppService.signOut();
+      }
+    }();
 
-    try {
-      await AppService.initializeSession();
-    } catch (_) {
-      await AppService.signOut();
-    }
+    await Future.wait([waitFuture, sessionFuture]);
 
     if (!mounted) return;
 

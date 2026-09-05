@@ -53,6 +53,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<void> _confirmClearAllNotifications() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Empty Notifications',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        content: Text(
+          'Are you sure you want to delete all notifications? This action cannot be undone.',
+          style: GoogleFonts.poppins(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: Colors.black54),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Empty',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await AppService.clearAllNotifications();
+        await _refreshNotifications();
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to empty notifications: $error')),
+        );
+      }
+    }
+  }
+
   Future<void> _openNotification(AppNotification item) async {
     if (!item.isRead) {
       try {
@@ -132,8 +184,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              TextButton.icon(
+                                onPressed: notifications.isNotEmpty
+                                    ? _confirmClearAllNotifications
+                                    : null,
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 18,
+                                  color: Color(0xFFEF4444),
+                                ),
+                                label: Text(
+                                  'Empty',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFEF4444),
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFFEF4444),
+                                  disabledForegroundColor: Colors.black26,
+                                ),
+                              ),
                               TextButton.icon(
                                 onPressed: hasUnread ? _markAllAsRead : null,
                                 icon: const Icon(

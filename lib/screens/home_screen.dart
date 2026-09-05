@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hello, $residentName!',
+                          'Hi $residentName,',
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -126,9 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Welcome to Drainage Reporting System',
+                          'Report Drainage Concerns in your Area.',
                           style: GoogleFonts.poppins(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: Colors.white.withValues(alpha: 0.95),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

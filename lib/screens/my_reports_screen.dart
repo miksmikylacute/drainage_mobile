@@ -19,6 +19,13 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
   late Future<List<DrainageReport>> _reportsFuture;
   RealtimeChannel? _reportsChannel;
   RealtimeChannel? _reportLogsChannel;
+  final Map<String, GlobalKey> _tabKeys = {
+    'All': GlobalKey(),
+    'Pending': GlobalKey(),
+    'In Progress': GlobalKey(),
+    'Resolved': GlobalKey(),
+    'Rejected': GlobalKey(),
+  };
 
   @override
   void initState() {
@@ -190,11 +197,21 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
   Widget _buildTabItem(String tabName) {
     final isSelected = _selectedTab == tabName;
+    final itemKey = _tabKeys[tabName];
     return GestureDetector(
+      key: itemKey,
       onTap: () {
         setState(() {
           _selectedTab = tabName;
         });
+        if (itemKey?.currentContext != null) {
+          Scrollable.ensureVisible(
+            itemKey!.currentContext!,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,

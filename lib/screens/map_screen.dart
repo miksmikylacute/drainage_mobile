@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/drainage_report.dart';
+import '../services/connectivity_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -28,9 +29,20 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+    ConnectivityService.instance.addListener(_onConnectivityChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerOnCurrentLocation();
     });
+  }
+
+  @override
+  void dispose() {
+    ConnectivityService.instance.removeListener(_onConnectivityChanged);
+    super.dispose();
+  }
+
+  void _onConnectivityChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _isWithinSoledad(LatLng point) {
@@ -159,7 +171,10 @@ class _MapScreenState extends State<MapScreen> {
                       backgroundColor: const Color(0xFF2196F3),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -167,9 +182,12 @@ class _MapScreenState extends State<MapScreen> {
                     child: Text(
                       'Manually pin point an issue in the map',
                       textAlign: TextAlign.center,
+                      softWrap: true,
+                      maxLines: 2,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 12.5,
+                        height: 1.3,
                       ),
                     ),
                   ),
@@ -291,11 +309,50 @@ class _MapScreenState extends State<MapScreen> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.drainage.user',
+                userAgentPackageName: 'com.drainalert.user',
                 maxZoom: 19.0,
               ),
             ],
           ),
+
+          // No Internet Overlay Banner for Map
+          if (ConnectivityService.instance.isOffline)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 68,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDC2626),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'No Internet Connection: Map tiles cannot be loaded. Pinned location and GPS coordinates will still be saved.',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Central Pin Pointer Overlay
           Center(

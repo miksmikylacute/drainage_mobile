@@ -9,7 +9,7 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp(home: LoginScreen()));
 
-    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.text('DrainAlert'), findsOneWidget);
     expect(find.text('LOGIN'), findsOneWidget);
     expect(find.byIcon(Icons.person_outline_rounded), findsOneWidget);
   });

@@ -227,50 +227,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2FBE9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.description_rounded,
-                        color: Color(0xFF10B981),
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Report ID',
-                              style: GoogleFonts.poppins(
-                                color: Colors.black54,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              report.displayId,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Text(
                   'We will review your report and keep you updated.',
                   textAlign: TextAlign.center,
