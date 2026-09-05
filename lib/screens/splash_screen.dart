@@ -52,18 +52,18 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               const Spacer(flex: 3),
               Image.asset(
-                'assets/drainage_clean.png',
-                height: 160,
+                'assets/drain_alert_logo.png',
+                height: 150,
                 fit: BoxFit.contain,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Text(
-                'REPORT DRAINAGE',
+                'DRAINALERT',
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF193864),
-                  letterSpacing: 1.2,
+                  color: const Color(0xFF2196F3),
+                  letterSpacing: 1.5,
                 ),
               ),
               const Spacer(flex: 3),
