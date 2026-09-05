@@ -795,11 +795,19 @@ class AppService {
     final user = _currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
-    await _client
-        .from('notifications')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+    try {
+      await _client.rpc(
+        'delete_resident_notification',
+        params: {'p_notification_id': id},
+      );
+    } catch (_) {
+      // Fallback direct delete under RLS policy
+      await _client
+          .from('notifications')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+    }
   }
 
   static Future<int> fetchUnreadNotificationCount() async {
