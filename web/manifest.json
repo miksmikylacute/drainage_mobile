@@ -1,6 +1,6 @@
 {
-    "name": "Drainage",
-    "short_name": "Drainage",
+    "name": "DrainAlert",
+    "short_name": "DrainAlert",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

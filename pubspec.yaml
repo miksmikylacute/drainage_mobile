@@ -18,6 +18,8 @@ dependencies:
   supabase_flutter: ^2.16.0
   geolocator: ^14.0.3
   video_player: ^2.11.1
+  connectivity_plus: ^7.3.1
+  camera: ^0.11.0
 
 dev_dependencies:
   flutter_test:
@@ -28,15 +30,17 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/drainage.png"
+  image_path: "assets/drain_alert_logo.png"
   min_sdk_android: 21
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/
     - assets/clogged_drain.png
     - assets/drainage.png
     - assets/drainage_clean.png
+    - assets/drain_alert_logo.png
     - assets/icon_report_issue.png
     - assets/icon_my_reports.png
     - assets/icon_notifications.png

@@ -184,8 +184,13 @@ class AppService {
         message.contains('user_banned') ||
         message.contains('user is banned') ||
         message.contains('user is disabled') ||
-        message.contains('account is disabled')) {
-      return 'Disabled User. Please Contact Administrator';
+        message.contains('account is disabled') ||
+        message.contains('account disabled') ||
+        message.contains('user unavailable') ||
+        message.contains('storageexception') ||
+        message.contains('row-level security') ||
+        message.contains('violates row-level security')) {
+      return 'User unavailable. Account disabled by admin.';
     }
 
     if (message.contains('under review') || message.contains('id is verified')) {
@@ -207,20 +212,53 @@ class AppService {
       return 'Please enter a valid email address.';
     }
 
-    if (message.contains('bucket not found') || message.contains('storage')) {
+    if (message.contains('bucket not found') ||
+        message.contains('resident-ids') ||
+        (message.contains('storage') && message.contains('bucket'))) {
       return 'Storage setup required: The resident-ids bucket is missing in Supabase. Please execute migrations 0011 and 0012 in your Supabase SQL editor.';
     }
 
-    if (message.contains('row-level security') || message.contains('policy')) {
-      return 'Database policy update required: Please execute migrations 0011 and 0012 in your Supabase SQL editor.';
+    if (message.contains('socketexception') ||
+        message.contains('failed host lookup') ||
+        message.contains('clientexception') ||
+        message.contains('network is unreachable') ||
+        message.contains('network error') ||
+        message.contains('connection refused') ||
+        message.contains('connection timed out') ||
+        message.contains('failed to fetch') ||
+        message.contains('no address associated with hostname') ||
+        message.contains('handshakeexception') ||
+        message.contains('httpexception')) {
+      return 'No Internet Connection';
     }
 
     final rawErr = error.toString().replaceFirst('Exception: ', '').trim();
-    if (rawErr.isNotEmpty) {
+    if (rawErr.isNotEmpty &&
+        !rawErr.toLowerCase().contains('storageexception') &&
+        !rawErr.toLowerCase().contains('row-level security') &&
+        !rawErr.toLowerCase().contains('postgrestexception')) {
       return '$fallback\n\nDetails: $rawErr';
     }
 
     return fallback;
+  }
+
+  static String friendlyErrorMessage(Object error, {String fallback = 'An unexpected error occurred.'}) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('socketexception') ||
+        message.contains('failed host lookup') ||
+        message.contains('clientexception') ||
+        message.contains('network is unreachable') ||
+        message.contains('network error') ||
+        message.contains('connection refused') ||
+        message.contains('connection timed out') ||
+        message.contains('failed to fetch') ||
+        message.contains('no address associated with hostname') ||
+        message.contains('handshakeexception') ||
+        message.contains('httpexception')) {
+      return 'No Internet Connection';
+    }
+    return friendlyAuthError(error, fallback: fallback);
   }
 
   static Future<void> initializeSession() async {
@@ -259,7 +297,7 @@ class AppService {
     if (status != 'Active' && status != 'Pending') {
       await _client.auth.signOut();
       _currentUser = null;
-      throw Exception('This resident account is disabled. Please contact the administrator.');
+      throw Exception('User Unavailable. Account disabled by the Admin');
     }
 
     _currentUser = AppUser(
@@ -579,7 +617,39 @@ class AppService {
     final user = _currentUser;
     if (user == null) throw Exception('No authenticated user.');
 
-    final mediaUrl = await _uploadReportMedia(media);
+    // Proactively verify the user account is still Active and not Disabled
+    final profile = await _client
+        .from('users')
+        .select('status, role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (profile == null || profile['status'] == 'Disabled') {
+      await signOut();
+      throw Exception('User unavailable. Account disabled by admin.');
+    }
+
+    if (profile['status'] == 'Pending') {
+      throw Exception('Your account is pending verification by the admin.');
+    }
+
+    String mediaUrl;
+    try {
+      mediaUrl = await _uploadReportMedia(media);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('violates row-level security') ||
+          msg.contains('row-level security') ||
+          msg.contains('unauthorized') ||
+          msg.contains('storageexception') ||
+          msg.contains('statuscode: 403') ||
+          msg.contains('statuscode: 401')) {
+        await signOut();
+        throw Exception('User unavailable. Account disabled by admin.');
+      }
+      rethrow;
+    }
+
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
 
@@ -738,6 +808,40 @@ class AppService {
     if (user == null) throw Exception('No authenticated user.');
 
     await _client.rpc('mark_all_notifications_read');
+  }
+
+  static Future<void> clearAllNotifications() async {
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    try {
+      await _client.rpc('clear_resident_notifications');
+    } catch (_) {
+      // Fallback direct delete under RLS policy
+      await _client
+          .from('notifications')
+          .delete()
+          .eq('user_id', user.id);
+    }
+  }
+
+  static Future<void> deleteNotification(String id) async {
+    final user = _currentUser;
+    if (user == null) throw Exception('No authenticated user.');
+
+    try {
+      await _client.rpc(
+        'delete_resident_notification',
+        params: {'p_notification_id': id},
+      );
+    } catch (_) {
+      // Fallback direct delete under RLS policy
+      await _client
+          .from('notifications')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+    }
   }
 
   static Future<int> fetchUnreadNotificationCount() async {
