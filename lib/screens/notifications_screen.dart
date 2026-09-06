@@ -483,16 +483,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ],
               ),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFF94A3B8),
-                size: 20,
-              ),
-              splashRadius: 20,
-              tooltip: 'Delete notification',
-              onPressed: () => _confirmDeleteNotification(item),
-            ),
           ],
         ),
       ),

@@ -151,11 +151,12 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'you are not in the baranggay soledad area in Mauban Quezon',
+                  'You are not in the Baranggay Soledad Area in Mauban, Quezon',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     color: Colors.black87,
-                    fontSize: 14,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
                     height: 1.4,
                   ),
                 ),
@@ -185,8 +186,8 @@ class _MapScreenState extends State<MapScreen> {
                       softWrap: true,
                       maxLines: 2,
                       style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
                         height: 1.3,
                       ),
                     ),

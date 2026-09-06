@@ -5,8 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/drainage_report.dart';
 import '../services/app_service.dart';
+import '../widgets/app_alert_dialog.dart';
 import '../widgets/app_video_player.dart';
 import 'app_header.dart';
+import 'login_screen.dart';
 import 'my_reports_screen.dart';
 import 'map_screen.dart';
 
@@ -200,16 +202,20 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Color(0xFF10B981),
-                  child: Icon(
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
                     Icons.check_rounded,
-                    color: Colors.white,
-                    size: 48,
+                    color: Color(0xFF22C55E),
+                    size: 30,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Text(
                   'Report Submitted!',
                   style: GoogleFonts.poppins(
@@ -225,15 +231,6 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   style: GoogleFonts.poppins(
                     color: Colors.black54,
                     fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'We will review your report and keep you updated.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    color: Colors.black54,
-                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -532,12 +529,40 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       _showSuccessDialog(report);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.toString()),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
+      final errorStr = error.toString().toLowerCase();
+      final friendlyMsg = AppService.friendlyErrorMessage(
+        error,
+        fallback: 'Unable to submit your report. Please try again.',
+      );
+      final isDisabled = errorStr.contains('disabled') ||
+          errorStr.contains('user unavailable') ||
+          errorStr.contains('storageexception') ||
+          friendlyMsg.toLowerCase().contains('disabled') ||
+          friendlyMsg.toLowerCase().contains('user unavailable');
+
+      if (isDisabled) {
+        await showAppAlertDialog(
+          context: context,
+          title: 'User Unavailable',
+          message: 'User unavailable. Account disabled by admin.',
+          icon: Icons.block_rounded,
+          color: const Color(0xFFEF4444),
+        );
+        await AppService.signOut();
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+        return;
+      }
+
+      await showAppAlertDialog(
+        context: context,
+        title: 'Unable to Submit Report',
+        message: friendlyMsg,
+        icon: Icons.error_outline_rounded,
+        color: const Color(0xFFEF4444),
       );
     } finally {
       if (mounted) {

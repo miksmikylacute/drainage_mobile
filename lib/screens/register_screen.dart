@@ -20,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -31,7 +32,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Uint8List? _selectedIdCardBackBytes;
 
   @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordStateChanged);
+    _passwordFocusNode.addListener(_onPasswordStateChanged);
+    _confirmPasswordController.addListener(_onPasswordStateChanged);
+  }
+
+  void _onPasswordStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordStateChanged);
+    _passwordFocusNode.removeListener(_onPasswordStateChanged);
+    _confirmPasswordController.removeListener(_onPasswordStateChanged);
+    _passwordFocusNode.dispose();
     _nameController.dispose();
     _contactController.dispose();
     _emailController.dispose();
@@ -121,13 +138,81 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         if (!mounted) return;
 
-        await showAppAlertDialog(
+        await showDialog<void>(
           context: context,
-          title: 'Registration Submitted',
-          message:
-              'Your registration and valid ID photos have been submitted to Barangay Soledad admins for verification. You can log in to check your dashboard, and reporting will unlock once your account is verified.',
-          icon: Icons.verified_user_rounded,
-          color: const Color(0xFF22C55E),
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Dialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Color(0xFF22C55E),
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Registration Submitted',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your registration and valid ID photos have been submitted to Barangay Soledad admins for verification. You can log in to check your dashboard, and reporting will unlock once your account is verified.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        color: Colors.black54,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2196F3),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'OK',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
 
         if (!mounted) return;
@@ -304,6 +389,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildPasswordRequirementBadge(String label, bool isMet) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: isMet ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isMet ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1),
+          width: 0.9,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isMet
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            size: 11.5,
+            color: isMet ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
+          ),
+          const SizedBox(width: 4.5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: isMet ? FontWeight.w600 : FontWeight.w500,
+              color: isMet ? const Color(0xFF15803D) : const Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordMatchBadge({required bool isMatch}) {
+    final color = isMatch ? const Color(0xFF16A34A) : const Color(0xFFEF4444);
+    final bgColor = isMatch ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2);
+    final borderColor =
+        isMatch ? const Color(0xFF86EFAC) : const Color(0xFFFCA5A5);
+    final icon = isMatch ? Icons.check_circle_rounded : Icons.cancel_rounded;
+    final label = isMatch ? 'Passwords match' : 'Passwords do not match';
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderColor, width: 0.9),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11.5, color: color),
+          const SizedBox(width: 4.5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   InputDecoration _inputDecoration({
     required String hintText,
     required IconData icon,
@@ -353,15 +508,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: SingleChildScrollView(
           physics: const ClampingScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 10.0,
-            ),
+            padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 10.0),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 20),
                   // Top Aesthetic Header (Compact & Aligned)
                   Row(
                     children: [
@@ -402,7 +555,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 30),
 
                   // Fields Container (Compact vertical gaps)
                   Column(
@@ -466,9 +619,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Password with parameter validations
+                      // Password with parameter validations & live requirement indicators
                       TextFormField(
                         controller: _passwordController,
+                        focusNode: _passwordFocusNode,
                         obscureText: _obscurePassword,
                         style: const TextStyle(fontSize: 13.5),
                         decoration: _inputDecoration(
@@ -511,6 +665,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
+                      if (_passwordFocusNode.hasFocus ||
+                          _passwordController.text.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 5,
+                          children: [
+                            _buildPasswordRequirementBadge(
+                              'Lowercase (a-z)',
+                              RegExp(r'[a-z]').hasMatch(_passwordController.text),
+                            ),
+                            _buildPasswordRequirementBadge(
+                              'Uppercase (A-Z)',
+                              RegExp(r'[A-Z]').hasMatch(_passwordController.text),
+                            ),
+                            _buildPasswordRequirementBadge(
+                              'Number (0-9)',
+                              RegExp(r'[0-9]').hasMatch(_passwordController.text),
+                            ),
+                            _buildPasswordRequirementBadge(
+                              'Symbol (!@#)',
+                              RegExp(r'[^a-zA-Z0-9]')
+                                  .hasMatch(_passwordController.text),
+                            ),
+                            _buildPasswordRequirementBadge(
+                              '8+ Characters',
+                              _passwordController.text.length >= 8,
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 8),
 
                       // Confirm Password
@@ -547,6 +732,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
+                      if (_confirmPasswordController.text.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        _buildPasswordMatchBadge(
+                          isMatch: _confirmPasswordController.text ==
+                              _passwordController.text,
+                        ),
+                      ],
                       const SizedBox(height: 10),
 
                       // Side-by-Side Front & Back ID Card Row (Fits 1 Page)
