@@ -4,6 +4,7 @@ import '../services/app_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
+import 'reset_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -65,55 +66,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleForgotPassword() async {
-    final email = _usernameController.text.trim();
-
-    if (email.isEmpty) {
-      await showAppAlertDialog(
-        context: context,
-        title: 'Email Required',
-        message: 'Enter your email before requesting a password reset.',
-        icon: Icons.email_outlined,
-        color: const Color(0xFF2196F3),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await AppService.resetPassword(email);
-      if (!mounted) return;
-      await showAppAlertDialog(
-        context: context,
-        title: 'Password Reset Sent',
-        message:
-            'If this email is registered, a password reset link will arrive shortly.',
-        icon: Icons.mark_email_read_outlined,
-        color: const Color(0xFF10B981),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      await showAppAlertDialog(
-        context: context,
-        title: 'Reset Failed',
-        message: AppService.friendlyAuthError(
-          error,
-          fallback:
-              'We could not send a password reset email. Please try again.',
+  void _handleForgotPassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ResetPasswordScreen(
+          initialEmail: _usernameController.text.trim(),
         ),
-        icon: Icons.error_outline_rounded,
-        color: const Color(0xFFEF4444),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+      ),
+    );
   }
 
   @override
@@ -187,47 +147,47 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 6),
 
-                            // Quote / Line Divider
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 46,
-                                  height: 1.5,
-                                  color: Colors.white70,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '”',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.0,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 46,
-                                  height: 1.5,
-                                  color: Colors.white70,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
+                            // // Quote / Line Divider
+                            // Row(
+                            //   mainAxisAlignment: MainAxisAlignment.center,
+                            //   children: [
+                            //     Container(
+                            //       width: 46,
+                            //       height: 1.5,
+                            //       color: Colors.white70,
+                            //     ),
+                            //     const SizedBox(width: 8),
+                            //     const Text(
+                            //       '”',
+                            //       style: TextStyle(
+                            //         color: Colors.white,
+                            //         fontSize: 24,
+                            //         fontWeight: FontWeight.bold,
+                            //         height: 1.0,
+                            //       ),
+                            //     ),
+                            //     const SizedBox(width: 8),
+                            //     Container(
+                            //       width: 46,
+                            //       height: 1.5,
+                            //       color: Colors.white70,
+                            //     ),
+                            //   ],
+                            // ),
+                            // const SizedBox(height: 6),
 
-                            // Subtitle
-                            Text(
-                              'Monitor and Report Drainage\nIssues in Your Area',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                fontSize: isSmallScreen ? 13 : 14.5,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.white,
-                                height: 1.35,
-                              ),
-                            ),
-                            SizedBox(height: isSmallScreen ? 8 : 16),
+                            // // Subtitle
+                            // Text(
+                            //   'Monitor and Report Drainage\nIssues in Your Area',
+                            //   textAlign: TextAlign.center,
+                            //   style: GoogleFonts.poppins(
+                            //     fontSize: isSmallScreen ? 13 : 14.5,
+                            //     fontWeight: FontWeight.w400,
+                            //     color: Colors.white,
+                            //     height: 1.35,
+                            //   ),
+                            // ),
+                            // SizedBox(height: isSmallScreen ? 8 : 16),
                           ],
                         ),
                       ),

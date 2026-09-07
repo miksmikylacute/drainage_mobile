@@ -452,6 +452,46 @@ class AppService {
     await _client.auth.resetPasswordForEmail(email.trim());
   }
 
+  static Future<void> verifyRecoveryOtpAndSetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    final cleanEmail = email.trim();
+    final cleanToken = token.trim();
+    final cleanPassword = newPassword.trim();
+
+    if (cleanEmail.isEmpty) {
+      throw Exception('Email is required.');
+    }
+    if (cleanToken.isEmpty) {
+      throw Exception('Verification code is required.');
+    }
+    if (cleanPassword.isEmpty) {
+      throw Exception('New password is required.');
+    }
+
+    // Verify recovery token
+    final response = await _client.auth.verifyOTP(
+      email: cleanEmail,
+      token: cleanToken,
+      type: OtpType.recovery,
+    );
+
+    if (response.session == null && _client.auth.currentSession == null) {
+      throw Exception('Invalid or expired verification code.');
+    }
+
+    // Update password
+    await _client.auth.updateUser(
+      UserAttributes(password: cleanPassword),
+    );
+
+    // Sign out of the temporary recovery session so user logs in cleanly
+    await _client.auth.signOut();
+    _currentUser = null;
+  }
+
   static Future<void> updateProfile({
     required String name,
     required String phone,
