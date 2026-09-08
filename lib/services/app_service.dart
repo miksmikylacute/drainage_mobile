@@ -449,7 +449,25 @@ class AppService {
       throw Exception('Email is required.');
     }
 
-    await _client.auth.resetPasswordForEmail(email.trim());
+    await _client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: 'drainalert://reset-password',
+    );
+  }
+
+  static Future<void> updatePassword(String newPassword) async {
+    final cleanPassword = newPassword.trim();
+    if (cleanPassword.isEmpty) {
+      throw Exception('Password cannot be empty.');
+    }
+
+    await _client.auth.updateUser(
+      UserAttributes(password: cleanPassword),
+    );
+
+    // Sign out from the temporary recovery session so user logs in cleanly
+    await _client.auth.signOut();
+    _currentUser = null;
   }
 
   static Future<void> verifyRecoveryOtpAndSetPassword({
