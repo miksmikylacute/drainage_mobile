@@ -4,7 +4,6 @@ import '../services/app_service.dart';
 import '../widgets/app_alert_dialog.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
-import 'reset_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,14 +65,155 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _handleForgotPassword() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ResetPasswordScreen(
-          initialEmail: _usernameController.text.trim(),
+  Future<String?> _promptEmailDialog() async {
+    final emailCtrl =
+        TextEditingController(text: _usernameController.text.trim());
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.lock_reset_rounded,
+                color: Color(0xFF2196F3),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Reset Password',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+          ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your registered email address to receive a password reset link.',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'name@example.com',
+                prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Color(0xFF2196F3), width: 1.5),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = emailCtrl.text.trim();
+              if (val.isNotEmpty) Navigator.of(ctx).pop(val);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2196F3),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Send Link',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _handleForgotPassword() async {
+    String? email = _usernameController.text.trim();
+
+    if (email.isEmpty) {
+      email = await _promptEmailDialog();
+      if (email == null || email.trim().isEmpty) return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AppService.resetPassword(email);
+      if (!mounted) return;
+      await showAppAlertDialog(
+        context: context,
+        title: 'Reset Link Sent',
+        message:
+            'A password reset link has been sent to $email. Please check your email to change your password.',
+        icon: Icons.mark_email_read_outlined,
+        color: const Color(0xFF10B981),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await showAppAlertDialog(
+        context: context,
+        title: 'Reset Failed',
+        message: AppService.friendlyAuthError(
+          error,
+          fallback:
+              'We could not send a password reset email. Please try again.',
+        ),
+        icon: Icons.error_outline_rounded,
+        color: const Color(0xFFEF4444),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override

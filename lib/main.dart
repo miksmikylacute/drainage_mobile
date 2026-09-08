@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
 import 'screens/splash_screen.dart';
+import 'screens/reset_password_screen.dart';
 import 'widgets/network_banner_wrapper.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +15,15 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.anonKey,
   );
+
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.passwordRecovery) {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(builder: (_) => const ResetPasswordScreen()),
+      );
+    }
+  });
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -31,6 +43,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'DrainAlert',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
