@@ -316,18 +316,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             // ),
                             // const SizedBox(height: 6),
 
-                            // // Subtitle
-                            // Text(
-                            //   'Monitor and Report Drainage\nIssues in Your Area',
-                            //   textAlign: TextAlign.center,
-                            //   style: GoogleFonts.poppins(
-                            //     fontSize: isSmallScreen ? 13 : 14.5,
-                            //     fontWeight: FontWeight.w400,
-                            //     color: Colors.white,
-                            //     height: 1.35,
-                            //   ),
-                            // ),
-                            // SizedBox(height: isSmallScreen ? 8 : 16),
+                            // Subtitle
+                            Text(
+                              'Monitor and Report Drainage\nIssues in Your Area',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: isSmallScreen ? 13 : 14.5,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white,
+                                height: 1.35,
+                              ),
+                            ),
+                            SizedBox(height: isSmallScreen ? 8 : 16),
                           ],
                         ),
                       ),
