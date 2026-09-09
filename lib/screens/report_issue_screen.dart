@@ -412,6 +412,40 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
+                      if (_descriptionController.text.trim().isEmpty) ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '• ',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.black87,
+                                    fontSize: 13,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Description is required.\n',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          'Please enter a description for your report.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       if (_selectedMedia == null) ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
