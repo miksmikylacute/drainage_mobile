@@ -445,14 +445,12 @@ class AppService {
   }
 
   static Future<void> resetPassword(String email) async {
-    if (email.trim().isEmpty) {
+    final cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail.isEmpty) {
       throw Exception('Email is required.');
     }
 
-    await _client.auth.resetPasswordForEmail(
-      email.trim(),
-      redirectTo: 'https://drainalert.site/reset-password',
-    );
+    await _client.auth.resetPasswordForEmail(cleanEmail);
   }
 
   static Future<void> updatePassword(String newPassword) async {
