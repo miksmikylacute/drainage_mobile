@@ -451,7 +451,7 @@ class AppService {
 
     await _client.auth.resetPasswordForEmail(
       email.trim(),
-      redirectTo: 'drainalert://reset-password',
+      redirectTo: 'https://drainalert.site/reset-password',
     );
   }
 
@@ -833,6 +833,10 @@ class AppService {
 
     return (rows as List<dynamic>)
         .map((row) => AppNotification.fromSupabase(row as Map<String, dynamic>))
+        // --- TEMPORARILY DISABLED: Hotline change notifications for mobile residents ---
+        // To re-enable hotline notifications, remove the `.where` filter below:
+        .where((notif) => notif.title != 'Hotline Updated')
+        // -------------------------------------------------------------------------------
         .toList();
   }
 
@@ -908,11 +912,16 @@ class AppService {
 
     final rows = await _client
         .from('notifications')
-        .select('id')
+        .select('id,title')
         .eq('user_id', user.id)
         .eq('is_read', false);
 
-    return (rows as List<dynamic>).length;
+    // --- TEMPORARILY DISABLED: Exclude hotline notifications from unread count ---
+    // To re-enable hotline notifications in unread count, remove the `.where` filter below:
+    final unreadRows = (rows as List<dynamic>).where((row) =>
+        '${(row as Map<String, dynamic>)['title'] ?? ''}' != 'Hotline Updated');
+    return unreadRows.length;
+    // ----------------------------------------------------------------------------
   }
 
   static Future<List<Hotline>> fetchHotlines() async {

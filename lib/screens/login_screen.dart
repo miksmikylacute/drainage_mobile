@@ -172,12 +172,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleForgotPassword() async {
-    String? email = _usernameController.text.trim();
-
-    if (email.isEmpty) {
-      email = await _promptEmailDialog();
-      if (email == null || email.trim().isEmpty) return;
-    }
+    final email = await _promptEmailDialog();
+    if (email == null || email.trim().isEmpty) return;
 
     setState(() {
       _isLoading = true;
@@ -190,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
         context: context,
         title: 'Reset Link Sent',
         message:
-            'A password reset link has been sent to $email. Please check your email to change your password.',
+            'A password reset link has been sent to $email. Please open the link in your email to set your new password on drainalert.site, then return here to log in.',
         icon: Icons.mark_email_read_outlined,
         color: const Color(0xFF10B981),
       );
