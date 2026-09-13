@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../config/supabase_config.dart';
 import '../services/app_service.dart';
 import '../widgets/app_alert_dialog.dart';
+import '../widgets/environment_badge.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 import 'reset_password_screen.dart';
@@ -144,6 +146,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 letterSpacing: -0.5,
                               ),
                             ),
+                            if (SupabaseConfig.isTestEnvironment) ...[
+                              const SizedBox(height: 6),
+                              const EnvironmentBadge(compact: false),
+                            ],
                             const SizedBox(height: 6),
 
                             // // Quote / Line Divider

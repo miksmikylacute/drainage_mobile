@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/supabase_config.dart';
 import '../services/app_service.dart';
 import '../widgets/app_alert_dialog.dart';
+import '../widgets/environment_badge.dart';
 import 'account_screen.dart';
 import 'my_reports_screen.dart';
 import 'notifications_screen.dart';
@@ -116,13 +118,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Hi $residentName,',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Hi $residentName,',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (SupabaseConfig.isTestEnvironment) ...[
+                              const SizedBox(width: 8),
+                              const EnvironmentBadge(compact: true),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(

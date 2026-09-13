@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'DrainAlert',
+      title: SupabaseConfig.isTestEnvironment ? 'DrainAlert [TEST]' : 'DrainAlert',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

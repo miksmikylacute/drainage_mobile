@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../config/supabase_config.dart';
+import '../widgets/environment_badge.dart';
 
 class AppHeader extends StatelessWidget {
   final String title;
@@ -33,13 +35,24 @@ class AppHeader extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              title,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (SupabaseConfig.isTestEnvironment) ...[
+                  const SizedBox(width: 8),
+                  const EnvironmentBadge(compact: true),
+                ],
+              ],
             ),
           ),
         ],
