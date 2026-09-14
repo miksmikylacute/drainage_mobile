@@ -257,7 +257,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
                       const SizedBox(height: 28),
 
-                      // ── Account Actions ─────────────────────────────
+                      // ss── Account Actions ─────────────────────────────
                       Text(
                         'Account Actions',
                         style: GoogleFonts.poppins(
