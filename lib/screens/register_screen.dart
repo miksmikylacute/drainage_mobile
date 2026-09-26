@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/app_service.dart';
@@ -582,6 +582,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextFormField(
                         controller: _contactController,
                         keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(11),
+                        ],
                         style: const TextStyle(fontSize: 13.5),
                         decoration: _inputDecoration(
                           hintText: 'Contact Number',
@@ -590,6 +594,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter your contact number';
+                          }
+                          if (value.trim().length != 11) {
+                            return 'Contact number must be exactly 11 digits';
                           }
                           return null;
                         },

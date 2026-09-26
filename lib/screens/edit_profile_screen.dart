@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/app_service.dart';
@@ -242,7 +241,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 label: 'Phone Number',
                                 controller: _phoneCtrl,
                                 keyboardType: TextInputType.phone,
-                                validator: (v) => null,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(11),
+                                ],
+                                validator: (v) {
+                                  if (v != null && v.trim().isNotEmpty && v.trim().length != 11) {
+                                    return 'Phone number must be exactly 11 digits';
+                                  }
+                                  return null;
+                                },
                               ),
                             ],
                           ),
@@ -334,6 +342,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required TextEditingController controller,
     required TextInputType keyboardType,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,6 +359,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           validator: validator,
           style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
           decoration: InputDecoration(
