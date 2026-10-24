@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/drainage_report.dart';
 import '../services/connectivity_service.dart';
@@ -25,6 +28,9 @@ class _MapScreenState extends State<MapScreen> {
   String _currentLocationText = 'Finding your current location...';
   bool _isDragging = false;
   bool _isLocating = true;
+  bool _isResolvingAddress = false;
+  Timer? _debounceTimer;
+  int _geocodeRequestId = 0;
 
   @override
   void initState() {
@@ -37,6 +43,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     ConnectivityService.instance.removeListener(_onConnectivityChanged);
     super.dispose();
   }
@@ -88,8 +95,9 @@ class _MapScreenState extends State<MapScreen> {
       final target = LatLng(pos.latitude, pos.longitude);
       if (_isWithinSoledad(target)) {
         _currentCenter = target;
+        _currentLocationText = _formatFallbackLocationText(target);
         _mapController.move(target, 15.0);
-        _updateLocationText(target);
+        _fetchDynamicAddress(target);
         setState(() {
           _isLocating = false;
         });
@@ -106,8 +114,9 @@ class _MapScreenState extends State<MapScreen> {
   void _handleOutsideOrDisabledGps() {
     if (!mounted) return;
     _currentCenter = _soledadCenter;
+    _currentLocationText = _formatFallbackLocationText(_soledadCenter);
     _mapController.move(_soledadCenter, 15.0);
-    _updateLocationText(_soledadCenter);
+    _fetchDynamicAddress(_soledadCenter);
     setState(() {
       _isLocating = false;
     });
@@ -229,36 +238,103 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  String _formatLocationText(LatLng position) {
-    double lat = position.latitude;
-    double lng = position.longitude;
-
-    String landmark;
-    if (lat > 14.2150) {
-      landmark = "near Mountain & Rural Area / Inland Channel";
-    } else if (lat > 14.2000) {
-      landmark = "near Upper Soledad / Gomez Street & Foothills";
-    } else if (lat < 14.1850) {
-      landmark = "near South Soledad / Quezon Avenue";
-    } else if (lng > 121.7380) {
-      landmark = "near Coastal Edge / East Drainage Line";
-    } else if (lng < 121.7100) {
-      landmark = "near West Mountain Stream / Inland Purok";
-    } else {
-      landmark = "near Barangay Hall & Main Drainage Channel";
-    }
-
-    return "Barangay Soledad, Mauban, Quezon - $landmark - pinned location ${_formatPinnedCoordinates(position)}";
-  }
-
   String _formatPinnedCoordinates(LatLng position) {
     return '(${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)})';
   }
 
+  String _formatFallbackLocationText(LatLng position) {
+    return "Barangay Soledad, Mauban, Quezon - pinned location ${_formatPinnedCoordinates(position)}";
+  }
+
+  String _formatDynamicAddress(Map<String, dynamic> data, LatLng position) {
+    final addr = data['address'] as Map<String, dynamic>? ?? {};
+    final primary = addr['amenity'] ??
+        addr['building'] ??
+        addr['shop'] ??
+        addr['tourism'] ??
+        data['name'] ??
+        addr['road'] ??
+        '';
+    final area = addr['neighbourhood'] ??
+        addr['quarter'] ??
+        addr['suburb'] ??
+        addr['village'] ??
+        'Soledad';
+    final town = addr['town'] ?? addr['municipality'] ?? addr['city'] ?? 'Mauban';
+    final province = addr['state'] ?? 'Quezon';
+
+    final parts = <String>[];
+    final pStr = '$primary'.trim();
+    if (pStr.isNotEmpty) parts.add(pStr);
+
+    final aStr = '$area'.trim();
+    if (aStr.isNotEmpty && !parts.contains(aStr)) {
+      parts.add(aStr);
+    }
+
+    final tStr = '$town'.trim();
+    if (tStr.isNotEmpty && !parts.contains(tStr)) {
+      parts.add(tStr);
+    }
+
+    final provStr = '$province'.trim();
+    if (provStr.isNotEmpty && !parts.contains(provStr)) {
+      parts.add(provStr);
+    }
+
+    final locationBase = parts.isNotEmpty
+        ? parts.join(', ')
+        : 'Barangay Soledad, Mauban, Quezon';
+
+    return '$locationBase - pinned location ${_formatPinnedCoordinates(position)}';
+  }
+
   void _updateLocationText(LatLng position) {
-    setState(() {
-      _currentLocationText = _formatLocationText(position);
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      _fetchDynamicAddress(position);
     });
+  }
+
+  Future<void> _fetchDynamicAddress(LatLng position) async {
+    final requestId = ++_geocodeRequestId;
+    if (!mounted) return;
+    setState(() {
+      _isResolvingAddress = true;
+    });
+
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.latitude}&lon=${position.longitude}',
+      );
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'DrainAlert/1.0 (com.drainalert.user)',
+          'Accept-Language': 'en,fil',
+        },
+      ).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200 && requestId == _geocodeRequestId) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final formatted = _formatDynamicAddress(data, position);
+        if (mounted && requestId == _geocodeRequestId) {
+          setState(() {
+            _currentLocationText = formatted;
+            _isResolvingAddress = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Keep previous text or fallback on error/timeout
+    }
+
+    if (mounted && requestId == _geocodeRequestId) {
+      setState(() {
+        _isResolvingAddress = false;
+      });
+    }
   }
 
   LatLng _clampToSoledad(LatLng point) {
@@ -441,7 +517,9 @@ class _MapScreenState extends State<MapScreen> {
                         Text(
                           _isLocating
                               ? 'Current Location'
-                              : 'Selected Location',
+                              : (_isResolvingAddress
+                                  ? 'Resolving Address...'
+                                  : 'Selected Location'),
                           style: GoogleFonts.poppins(
                             color: Colors.black54,
                             fontWeight: FontWeight.bold,
